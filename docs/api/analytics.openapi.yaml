@@ -1,0 +1,29 @@
+---
+openapi: 3.0.3
+info:
+  title: Analytics Service API
+  version: "1.0.0"
+  description: Monthly summaries and insights (workspace-scoped).
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/analytics/monthly:
+    get:
+      summary: Get monthly summary
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: month
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }

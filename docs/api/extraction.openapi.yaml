@@ -1,0 +1,26 @@
+---
+openapi: 3.0.3
+info:
+  title: Extraction Service API
+  version: "1.0.0"
+  description: Internal endpoints for extraction retries/status (optional in MVP).
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/extractions/{uploadFileId}:
+    get:
+      summary: Get extraction status/result (optional)
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: uploadFileId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }

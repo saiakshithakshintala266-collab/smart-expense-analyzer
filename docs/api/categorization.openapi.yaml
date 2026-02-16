@@ -1,0 +1,31 @@
+---
+openapi: 3.0.3
+info:
+  title: Categorization Service API
+  version: "1.0.0"
+  description: Category listing and rule management (workspace-scoped).
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/categories:
+    get:
+      summary: List categories
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /workspaces/{workspaceId}/rules:
+    post:
+      summary: Create category rule (Admin for global rules)
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "201": { description: Created }

@@ -1,0 +1,30 @@
+---
+openapi: 3.0.3
+info:
+  title: Notification Service API
+  version: "1.0.0"
+  description: User notification preferences and (optional) workspace defaults.
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/me/notification-preferences:
+    get:
+      summary: Get my notification preferences
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    put:
+      summary: Update my notification preferences
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }

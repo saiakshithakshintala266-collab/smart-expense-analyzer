@@ -1,0 +1,35 @@
+---
+openapi: 3.0.3
+info:
+  title: Anomaly Service API
+  version: "1.0.0"
+  description: List and review anomalies (workspace-scoped).
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/anomalies:
+    get:
+      summary: List anomalies
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /workspaces/{workspaceId}/anomalies/{anomalyId}:
+    patch:
+      summary: Update anomaly status (reviewed/ignored)
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: anomalyId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }

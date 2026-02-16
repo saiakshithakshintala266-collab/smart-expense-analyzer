@@ -1,0 +1,360 @@
+---
+openapi: 3.0.3
+info:
+  title: Transactions Service API
+  version: "1.0.0"
+  description: Canonical transaction CRUD + query, workspace-scoped.
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Transactions
+security:
+  - bearerAuth: []
+
+paths:
+  /workspaces/{workspaceId}/transactions:
+    get:
+      tags: [Transactions]
+      summary: List transactions (filters supported)
+      operationId: listTransactions
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+        - name: month
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 12 }
+        - name: year
+          in: query
+          required: false
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: categoryId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: merchant
+          in: query
+          required: false
+          schema: { type: string }
+        - name: minAmountCents
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: maxAmountCents
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: source
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TransactionSource"
+      responses:
+        "200":
+          description: Transactions
+          headers:
+            X-Correlation-Id: { $ref: "#/components/headers/CorrelationId" }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTransactionsResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+    post:
+      tags: [Transactions]
+      summary: Create transaction (manual)
+      description: Members/Admin/Owner can create a manual transaction.
+      operationId: createTransaction
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateTransactionRequest" }
+      responses:
+        "201":
+          description: Created
+          headers:
+            X-Correlation-Id: { $ref: "#/components/headers/CorrelationId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transaction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /workspaces/{workspaceId}/transactions/{transactionId}:
+    get:
+      tags: [Transactions]
+      summary: Get transaction by ID
+      operationId: getTransaction
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/TransactionId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Transaction
+          headers:
+            X-Correlation-Id: { $ref: "#/components/headers/CorrelationId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    patch:
+      tags: [Transactions]
+      summary: Update transaction fields
+      operationId: updateTransaction
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/TransactionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateTransactionRequest" }
+      responses:
+        "200":
+          description: Updated
+          headers:
+            X-Correlation-Id: { $ref: "#/components/headers/CorrelationId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transaction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+    delete:
+      tags: [Transactions]
+      summary: Delete transaction (soft delete)
+      description: Marks a transaction as DELETED.
+      operationId: deleteTransaction
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/TransactionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "204":
+          description: Deleted
+          headers:
+            X-Correlation-Id: { $ref: "#/components/headers/CorrelationId" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  headers:
+    CorrelationId:
+      description: Correlation id for distributed tracing.
+      schema: { type: string }
+
+  parameters:
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 1 }
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: { type: string, minLength: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    PageToken:
+      name: pageToken
+      in: query
+      required: false
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflict / idempotency violation
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    TransactionSource:
+      type: string
+      enum: [receipt, bank_csv, manual]
+
+    TransactionStatus:
+      type: string
+      enum: [ACTIVE, DELETED]
+
+    CategorySource:
+      type: string
+      enum: [rule, ml, llm, manual, unknown]
+
+    Category:
+      type: object
+      additionalProperties: false
+      required: [id, name, confidence, source]
+      properties:
+        id: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        source: { $ref: "#/components/schemas/CategorySource" }
+
+    Merchant:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        normalizedName: { type: string }
+        mcc: { type: string }
+        location: { type: string }
+
+    Transaction:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - workspaceId
+        - createdByUserId
+        - source
+        - transactionDate
+        - amountCents
+        - currency
+        - merchant
+        - category
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id: { type: string, minLength: 1 }
+        workspaceId: { type: string, minLength: 1 }
+        createdByUserId: { type: string, minLength: 1 }
+        updatedByUserId: { type: string }
+        source: { $ref: "#/components/schemas/TransactionSource" }
+        transactionDate: { type: string, format: date-time }
+        postedDate: { type: string, format: date-time }
+        amountCents: { type: integer }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        merchant: { $ref: "#/components/schemas/Merchant" }
+        category: { $ref: "#/components/schemas/Category" }
+        tags:
+          type: array
+          items: { type: string }
+        notes: { type: string }
+        status: { $ref: "#/components/schemas/TransactionStatus" }
+        links:
+          type: object
+          additionalProperties: false
+          properties:
+            uploadFileId: { type: string }
+            externalId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateTransactionRequest:
+      type: object
+      additionalProperties: false
+      required: [transactionDate, amountCents, currency, merchantName]
+      properties:
+        transactionDate: { type: string, format: date-time }
+        postedDate: { type: string, format: date-time }
+        amountCents: { type: integer }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        merchantName: { type: string, minLength: 1 }
+        categoryId: { type: string }
+        notes: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    UpdateTransactionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        transactionDate: { type: string, format: date-time }
+        postedDate: { type: string, format: date-time }
+        amountCents: { type: integer }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        merchant:
+          $ref: "#/components/schemas/Merchant"
+        category:
+          $ref: "#/components/schemas/Category"
+        notes: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    ListTransactionsResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Transaction" }
+        nextPageToken: { type: string }
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string, minLength: 1 }
+        message: { type: string, minLength: 1 }
+        details:
+          type: object
+          additionalProperties: true

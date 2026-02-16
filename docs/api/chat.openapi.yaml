@@ -1,0 +1,21 @@
+---
+openapi: 3.0.3
+info:
+  title: Chat Service API
+  version: "1.0.0"
+  description: Ask questions about spending (workspace-scoped).
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+paths:
+  /workspaces/{workspaceId}/chat:
+    post:
+      summary: Ask a spending question
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
