@@ -46,6 +46,7 @@ Authoritative policy: `docs/architecture/rbac.md`
 
 ## v1 repo structure (authoritative)
 
+```txt
 smart-expense-analyzer/
 ├─ README.md
 ├─ LICENSE
