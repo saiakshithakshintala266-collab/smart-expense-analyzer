@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/insight.schema.json",
+  "title": "Insight",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "workspaceId",
+    "createdByUserId",
+    "type",
+    "period",
+    "title",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workspaceId": { "type": "string", "minLength": 1 },
+    "createdByUserId": { "type": "string", "minLength": 1 },
+
+    "type": {
+      "type": "string",
+      "enum": ["MOM_CATEGORY_CHANGE", "TOP_CATEGORIES", "TOP_MERCHANTS", "BUDGET_ALERT", "SUBSCRIPTION_SUMMARY"]
+    },
+
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["month", "year"],
+      "properties": {
+        "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "year": { "type": "integer", "minimum": 2000, "maximum": 2100 }
+      }
+    },
+
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string" },
+
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "categoryId": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "currentTotalCents": { "type": "integer" },
+        "previousTotalCents": { "type": "integer" },
+        "percentChange": { "type": "number" },
+        "topMerchants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["merchant", "totalCents"],
+            "properties": {
+              "merchant": { "type": "string" },
+              "totalCents": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/transaction.schema.json",
+  "title": "Transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "workspaceId",
+    "createdByUserId",
+    "source",
+    "transactionDate",
+    "amountCents",
+    "currency",
+    "merchant",
+    "category",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workspaceId": { "type": "string", "minLength": 1 },
+    "createdByUserId": { "type": "string", "minLength": 1 },
+    "updatedByUserId": { "type": "string" },
+
+    "source": { "type": "string", "enum": ["receipt", "bank_csv", "manual"] },
+
+    "transactionDate": { "type": "string", "format": "date-time" },
+    "postedDate": { "type": "string", "format": "date-time" },
+
+    "amountCents": { "type": "integer" },
+    "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+
+    "merchant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "normalizedName": { "type": "string" },
+        "mcc": { "type": "string" },
+        "location": { "type": "string" }
+      }
+    },
+
+    "payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": "string", "enum": ["card", "cash", "bank", "other"] },
+        "last4": { "type": "string", "minLength": 4, "maxLength": 4 },
+        "network": { "type": "string" }
+      }
+    },
+
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "confidence", "source"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source": { "type": "string", "enum": ["rule", "ml", "llm", "manual", "unknown"] }
+      }
+    },
+
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" },
+
+    "status": { "type": "string", "enum": ["ACTIVE", "DELETED"] },
+
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uploadFileId": { "type": "string" },
+        "externalId": { "type": "string" }
+      }
+    },
+
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

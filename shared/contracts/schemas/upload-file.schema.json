@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/upload-file.schema.json",
+  "title": "UploadFile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "workspaceId",
+    "createdByUserId",
+    "storageBucket",
+    "storageKey",
+    "originalFileName",
+    "contentType",
+    "sizeBytes",
+    "status",
+    "source",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workspaceId": { "type": "string", "minLength": 1 },
+    "createdByUserId": { "type": "string", "minLength": 1 },
+
+    "storageBucket": { "type": "string", "minLength": 1 },
+    "storageKey": { "type": "string", "minLength": 1 },
+
+    "originalFileName": { "type": "string", "minLength": 1 },
+    "contentType": { "type": "string", "minLength": 1 },
+    "sizeBytes": { "type": "integer", "minimum": 0 },
+
+    "source": { "type": "string", "enum": ["receipt", "bank_csv", "manual"] },
+
+    "status": {
+      "type": "string",
+      "enum": ["QUEUED", "UPLOADED", "PROCESSING", "COMPLETED", "FAILED"]
+    },
+
+    "checksumSha256": { "type": "string", "minLength": 16 },
+    "errorMessage": { "type": "string" },
+
+    "retentionUntil": { "type": "string", "format": "date-time" },
+
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

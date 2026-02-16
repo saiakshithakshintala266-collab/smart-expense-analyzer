@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/events/schemas/insight.generated.v1.json",
+  "title": "insight.generated.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "schemaVersion",
+    "occurredAt",
+    "producer",
+    "workspaceId",
+    "actorUserId",
+    "correlationId",
+    "data"
+  ],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 1 },
+    "eventType": { "const": "insight.generated" },
+    "eventVersion": { "const": "v1" },
+    "schemaVersion": { "const": 1 },
+
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "producer": { "const": "analytics-service" },
+    "workspaceId": { "type": "string", "minLength": 1 },
+    "actorUserId": { "type": "string", "minLength": 1 },
+    "correlationId": { "type": "string", "minLength": 1 },
+
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["insightId", "insight"],
+      "properties": {
+        "insightId": { "type": "string", "minLength": 1 },
+        "insight": {
+          "$ref": "https://example.com/schemas/insight.schema.json"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/anomaly.schema.json",
+  "title": "Anomaly",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "workspaceId",
+    "createdByUserId",
+    "type",
+    "severity",
+    "status",
+    "title",
+    "detectedAt",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workspaceId": { "type": "string", "minLength": 1 },
+    "createdByUserId": { "type": "string", "minLength": 1 },
+
+    "type": { "type": "string", "enum": ["DUPLICATE_CHARGE", "UNUSUAL_MERCHANT", "UNUSUAL_AMOUNT"] },
+    "severity": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "status": { "type": "string", "enum": ["OPEN", "REVIEWED", "IGNORED"] },
+
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+
+    "transactionIds": { "type": "array", "items": { "type": "string" } },
+
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ruleVersion": { "type": "string" },
+        "windowDays": { "type": "integer" },
+        "amountCents": { "type": "integer" },
+        "merchant": { "type": "string" }
+      }
+    },
+
+    "detectedAt": { "type": "string", "format": "date-time" },
+    "reviewedByUserId": { "type": "string" },
+    "reviewedAt": { "type": "string", "format": "date-time" },
+
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}
