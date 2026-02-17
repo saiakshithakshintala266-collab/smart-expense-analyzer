@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: Upload Service API
+  version: "1.0.0"
+  description: Workspace-scoped upload initiation and lifecycle (presigned S3 uploads).
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Uploads
+security:
+  - bearerAuth: []
+
+paths:
+  /workspaces/{workspaceId}/uploads:
+    post:
+      tags: [Uploads]
+      summary: Create an upload and return a presigned URL
+      description: >
+        Creates an UploadFile record and returns a presigned URL for direct-to-S3 upload.
+        Requires role: Admin/Member for team; Owner for personal.
+      operationId: createUpload
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUploadRequest"
+      responses:
+        "201":
+          description: Upload created
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUploadResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+    get:
+      tags: [Uploads]
+      summary: List uploads
+      operationId: listUploads
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/UploadStatus"
+        - name: source
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/UploadSource"
+      responses:
+        "200":
+          description: Uploads
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListUploadsResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /workspaces/{workspaceId}/uploads/{uploadFileId}:
+    get:
+      tags: [Uploads]
+      summary: Get upload by ID
+      operationId: getUpload
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/UploadFileId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "200":
+          description: Upload
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadFile"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    delete:
+      tags: [Uploads]
+      summary: Delete upload artifact (Admin/Owner)
+      description: Deletes the raw upload artifact and marks UploadFile as deleted/failed (implementation-specific).
+      operationId: deleteUpload
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/UploadFileId"
+        - $ref: "#/components/parameters/CorrelationId"
+      responses:
+        "204":
+          description: Deleted
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/CorrelationId"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /workspaces/{workspaceId}/uploads/{uploadFileId}/finalize:
+    post:
+      tags: [Uploads]
+      summary: Finalize an upload and trigger processing
+      description: >
+        Marks an upload as UPLOADED and emits file.uploaded.v1.
+        Idempotent: calling finalize multiple times must not duplicate downstream processing.
+      operationId: finalizeUpload
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/UploadFileId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CorrelationId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizeUploadRequest"
+      responses:
+        "202":
+          description: Accepted (processing started)
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalizeUploadResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  headers:
+    CorrelationId:
+      description: Correlation id for distributed tracing.
+      schema:
+        type: string
+
+  parameters:
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    UploadFileId:
+      name: uploadFileId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, minLength: 1 }
+      description: Client-provided idempotency key for safe retries.
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: { type: string, minLength: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    PageToken:
+      name: pageToken
+      in: query
+      required: false
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflict / idempotency violation
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    UploadSource:
+      type: string
+      enum: [receipt, bank_csv, manual]
+
+    UploadStatus:
+      type: string
+      enum: [QUEUED, UPLOADED, PROCESSING, COMPLETED, FAILED]
+
+    CreateUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [originalFileName, contentType, sizeBytes, source]
+      properties:
+        originalFileName: { type: string, minLength: 1 }
+        contentType: { type: string, minLength: 1, description: MIME type (e.g., image/jpeg, application/pdf, text/csv) }
+        sizeBytes: { type: integer, minimum: 0 }
+        source: { $ref: "#/components/schemas/UploadSource" }
+        checksumSha256: { type: string, minLength: 16, description: Optional checksum for integrity/dedupe. }
+
+    CreateUploadResponse:
+      type: object
+      additionalProperties: false
+      required: [uploadFile, presignedUrl, method, headers]
+      properties:
+        uploadFile:
+          $ref: "#/components/schemas/UploadFile"
+        presignedUrl:
+          type: string
+          description: Pre-signed URL to upload directly to S3.
+        method:
+          type: string
+          enum: [PUT, POST]
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers required by the presigned request (if any).
+        expiresInSeconds:
+          type: integer
+          minimum: 60
+          description: Presigned URL TTL.
+
+    FinalizeUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        checksumSha256: { type: string, minLength: 16 }
+
+    FinalizeUploadResponse:
+      type: object
+      additionalProperties: false
+      required: [uploadFileId, status]
+      properties:
+        uploadFileId: { type: string, minLength: 1 }
+        status: { $ref: "#/components/schemas/UploadStatus" }
+
+    ListUploadsResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/UploadFile" }
+        nextPageToken:
+          type: string
+
+    UploadFile:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - workspaceId
+        - createdByUserId
+        - storageBucket
+        - storageKey
+        - originalFileName
+        - contentType
+        - sizeBytes
+        - status
+        - source
+        - createdAt
+        - updatedAt
+      properties:
+        id: { type: string, minLength: 1 }
+        workspaceId: { type: string, minLength: 1 }
+        createdByUserId: { type: string, minLength: 1 }
+        storageBucket: { type: string, minLength: 1 }
+        storageKey: { type: string, minLength: 1 }
+        originalFileName: { type: string, minLength: 1 }
+        contentType: { type: string, minLength: 1 }
+        sizeBytes: { type: integer, minimum: 0 }
+        status: { $ref: "#/components/schemas/UploadStatus" }
+        source: { $ref: "#/components/schemas/UploadSource" }
+        checksumSha256: { type: string }
+        retentionUntil: { type: string, format: date-time }
+        errorMessage: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string, minLength: 1 }
+        message: { type: string, minLength: 1 }
+        details:
+          type: object
+          additionalProperties: true
