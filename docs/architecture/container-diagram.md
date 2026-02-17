@@ -1,3 +1,99 @@
+
+---
+
+```md
+# Container Diagram (v1)
+
+```mermaid
+flowchart TB
+  %% Client
+  subgraph Client
+    web[Next.js Web App]
+  end
+
+  %% Edge
+  subgraph Edge
+    auth[Cognito]
+    api[API Gateway / ALB]
+  end
+
+  web --> auth
+  web --> api
+
+  %% Core Services
+  subgraph Services
+    upl[upload-service]
+    ext[extraction-service]
+    txn[transactions-service]
+    cat[categorization-service]
+    ana[analytics-service]
+    anom[anomaly-service]
+    notif[notification-service]
+    chat[chat-service]
+  end
+
+  api --> upl
+  api --> txn
+  api --> ana
+  api --> anom
+  api --> notif
+  api --> chat
+
+  %% Storage
+  subgraph Storage
+    s3[(S3)]
+    ddb1[(DynamoDB: Uploads)]
+    ddb2[(DynamoDB: Transactions)]
+    ddb3[(DynamoDB: Categories/Rules)]
+    ddb4[(DynamoDB: Aggregates/Insights)]
+    ddb5[(DynamoDB: Anomalies)]
+    ddb6[(DynamoDB: Preferences)]
+  end
+
+  upl --> s3
+  upl --> ddb1
+
+  txn --> ddb2
+  cat --> ddb3
+  ana --> ddb4
+  anom --> ddb5
+  notif --> ddb6
+
+  %% External AI/Email
+  subgraph External
+    textract[Textract]
+    bedrock[Bedrock]
+    ses[SES]
+  end
+
+  ext --> textract
+  cat --> bedrock
+  chat --> bedrock
+  notif --> ses
+
+  %% Eventing
+  subgraph Eventing
+    bus[(Event Bus)]
+  end
+
+  upl --> bus
+  ext --> bus
+  txn --> bus
+  cat --> bus
+  ana --> bus
+  anom --> bus
+
+  bus --> ext
+  bus --> txn
+  bus --> cat
+  bus --> ana
+  bus --> anom
+  bus --> notif
+
+  %% Notes
+  note1[/"All APIs & data are workspace-scoped (workspaceId)\nRBAC enforced per rbac.md"/]
+  api --- note1
+
 ## Service Catalog (v1)
 
 ### Shared rules (apply to all services)
