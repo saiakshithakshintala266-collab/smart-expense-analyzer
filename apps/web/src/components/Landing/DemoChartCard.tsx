@@ -20,7 +20,7 @@ export function DemoChartCard() {
 
       <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-3">
         <div className="mb-2 text-xs text-white/60">Monthly Spend</div>
-        <div className="h-40 w-full">
+        <div className="h-40 w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
