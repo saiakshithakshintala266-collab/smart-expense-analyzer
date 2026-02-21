@@ -164,6 +164,7 @@ function NavBar() {
       </nav>
 
       <div className="flex items-center gap-2">
+        <a className="btn-ghost hidden sm:inline-flex" href="/app/upload">Upload Demo</a>
         <button className="btn-ghost hidden sm:inline-flex">Log in</button>
         <button className="btn-primary">Start Tracking Free</button>
       </div>
