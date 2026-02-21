@@ -4,3 +4,6 @@ apps/web/.next/**
 
 # Node dependencies
 **/node_modules/
+
+# pnpm local artifacts
+pnpm/
