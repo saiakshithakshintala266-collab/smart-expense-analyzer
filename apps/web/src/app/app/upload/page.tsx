@@ -1,6 +1,9 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
+
+type Role = "admin" | "member" | "viewer";
 
 type CreateUploadResponse = {
   uploadFile: {
@@ -30,7 +33,12 @@ function defaultWorkspaceId(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? "ws1";
 }
 
+function canWrite(role: Role): boolean {
+  return role === "admin" || role === "member";
+}
+
 export default function UploadPage() {
+  const [role, setRole] = useState<Role>("member");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
@@ -40,11 +48,16 @@ export default function UploadPage() {
   const workspaceId = useMemo(() => defaultWorkspaceId(), []);
 
   function addLog(line: string) {
-    setLog((prev) => [line, ...prev].slice(0, 20));
+    setLog((prev) => [line, ...prev].slice(0, 30));
   }
 
   async function onCreateUpload() {
     if (!file) return;
+    if (!canWrite(role)) {
+      addLog("RBAC: viewer cannot create uploads.");
+      return;
+    }
+
     setBusy(true);
     setCreateResp(null);
     setFinalizeStatus(null);
@@ -56,7 +69,8 @@ export default function UploadPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Correlation-Id": crypto.randomUUID()
+          "X-Correlation-Id": crypto.randomUUID(),
+          "X-Debug-Role": role
         },
         body: JSON.stringify({
           originalFileName: file.name,
@@ -74,7 +88,6 @@ export default function UploadPage() {
       const json = (await res.json()) as CreateUploadResponse;
       setCreateResp(json);
       addLog(`Upload created: ${json.uploadFile.id}`);
-      addLog(`Presigned URL (stub): ${json.presignedUrl}`);
     } catch (e) {
       addLog(String(e));
     } finally {
@@ -84,6 +97,11 @@ export default function UploadPage() {
 
   async function onFinalize() {
     if (!createResp) return;
+    if (!canWrite(role)) {
+      addLog("RBAC: viewer cannot finalize uploads.");
+      return;
+    }
+
     setBusy(true);
 
     try {
@@ -96,7 +114,8 @@ export default function UploadPage() {
           headers: {
             "Content-Type": "application/json",
             "X-Correlation-Id": crypto.randomUUID(),
-            "Idempotency-Key": crypto.randomUUID()
+            "Idempotency-Key": crypto.randomUUID(),
+            "X-Debug-Role": role
           },
           body: JSON.stringify({})
         }
@@ -117,14 +136,21 @@ export default function UploadPage() {
     }
   }
 
+  const writeAllowed = canWrite(role);
+
   return (
     <main className="min-h-screen glow-border">
       <div className="relative mx-auto max-w-4xl px-4 py-10">
         <div className="glass rounded-2xl p-6">
-          <h1 className="text-2xl font-bold">Upload (Phase 2.4)</h1>
-          <p className="mt-2 text-sm text-white/70">
-            This page wires the web app to upload-service. Actual S3 upload comes in Phase 2.5.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold">Upload (Phase 2.4)</h1>
+              <p className="mt-2 text-sm text-white/70">
+                Fake login toggle now → real Cognito auth later. Viewer is read-only.
+              </p>
+            </div>
+            <RoleToggle role={role} setRole={setRole} />
+          </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="glass rounded-2xl p-5">
@@ -135,23 +161,30 @@ export default function UploadPage() {
                 accept=".pdf,.png,.jpg,.jpeg,.csv"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
+
               <div className="mt-3 text-xs text-white/60">
                 Workspace: <span className="font-mono">{workspaceId}</span> • API:{" "}
                 <span className="font-mono">{apiBase()}</span>
               </div>
 
+              {!writeAllowed && (
+                <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs text-amber-100/90">
+                  You are <span className="font-semibold">Viewer</span>. Upload actions are disabled (read-only).
+                </div>
+              )}
+
               <button
-                className="btn-primary mt-4 w-full"
+                className="btn-primary mt-4 w-full disabled:opacity-40"
                 onClick={onCreateUpload}
-                disabled={!file || busy}
+                disabled={!file || busy || !writeAllowed}
               >
                 Create Upload
               </button>
 
               <button
-                className="btn-ghost mt-3 w-full"
+                className="btn-ghost mt-3 w-full disabled:opacity-40"
                 onClick={onFinalize}
-                disabled={!createResp || busy}
+                disabled={!createResp || busy || !writeAllowed}
               >
                 Finalize Upload
               </button>
@@ -161,8 +194,9 @@ export default function UploadPage() {
               <div className="text-sm font-semibold">2) Result</div>
 
               <div className="mt-3 space-y-2 text-xs text-white/70">
+                <Row label="Role" value={role} />
                 <Row label="File" value={file ? `${file.name} (${file.size} bytes)` : "-"} />
-                <Row label="uploadFileId" value={createResp?.uploadFile.id ?? "-"} />
+                <Row label="uploadFileId" value={createResp?.uploadFile.id ?? "-"} mono />
                 <Row label="status" value={finalizeStatus ?? createResp?.uploadFile.status ?? "-"} />
                 <Row label="presignedUrl" value={createResp?.presignedUrl ?? "-"} mono />
               </div>
@@ -190,6 +224,48 @@ export default function UploadPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function RoleToggle({
+  role,
+  setRole
+}: {
+  role: Role;
+  setRole: (r: Role) => void;
+}) {
+  return (
+    <div className="glass rounded-2xl p-3">
+      <div className="text-xs font-semibold text-white/70">Fake login</div>
+      <div className="mt-2 flex gap-2">
+        <RoleBtn current={role} value="admin" onClick={() => setRole("admin")} />
+        <RoleBtn current={role} value="member" onClick={() => setRole("member")} />
+        <RoleBtn current={role} value="viewer" onClick={() => setRole("viewer")} />
+      </div>
+    </div>
+  );
+}
+
+function RoleBtn({
+  current,
+  value,
+  onClick
+}: {
+  current: Role;
+  value: Role;
+  onClick: () => void;
+}) {
+  const active = current === value;
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+        active ? "bg-white/20 border border-white/20" : "bg-white/5 border border-white/10 hover:bg-white/10"
+      }`}
+      type="button"
+    >
+      {value}
+    </button>
   );
 }
 

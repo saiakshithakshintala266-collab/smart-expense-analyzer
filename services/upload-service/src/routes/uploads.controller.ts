@@ -1,9 +1,21 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Query } from "@nestjs/common";
+// File: services/upload-service/src/routes/uploads.controller.ts
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  UseGuards
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { CORRELATION_HEADER } from "@shared/observability";
 import { IDEMPOTENCY_HEADER } from "@shared/idempotency";
 import { UploadsService } from "../domain/uploads.service";
 import { CreateUploadRequestDto, FinalizeUploadRequestDto } from "./uploads.dto";
+import { DebugRoleGuard } from "../auth/debug-role.guard";
 
 @ApiTags("Uploads")
 @ApiBearerAuth()
@@ -12,6 +24,8 @@ export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
   @Post()
+  @UseGuards(DebugRoleGuard)
+  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   createUpload(
@@ -30,6 +44,8 @@ export class UploadsController {
   }
 
   @Post("/:uploadFileId/finalize")
+  @UseGuards(DebugRoleGuard)
+  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   finalize(
@@ -50,11 +66,16 @@ export class UploadsController {
   }
 
   @Get("/:uploadFileId")
-  getOne(@Param("workspaceId") workspaceId: string, @Param("uploadFileId") uploadFileId: string) {
+  @ApiHeader({ name: "X-Correlation-Id", required: false })
+  getOne(
+    @Param("workspaceId") workspaceId: string,
+    @Param("uploadFileId") uploadFileId: string
+  ) {
     return this.uploads.getUpload({ workspaceId, uploadFileId });
   }
 
   @Get()
+  @ApiHeader({ name: "X-Correlation-Id", required: false })
   list(
     @Param("workspaceId") workspaceId: string,
     @Query("status") status?: string,
@@ -64,8 +85,13 @@ export class UploadsController {
   }
 
   @Delete("/:uploadFileId")
-  remove(@Param("workspaceId") workspaceId: string, @Param("uploadFileId") uploadFileId: string) {
+  @UseGuards(DebugRoleGuard)
+  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
+  @ApiHeader({ name: "X-Correlation-Id", required: false })
+  remove(
+    @Param("workspaceId") workspaceId: string,
+    @Param("uploadFileId") uploadFileId: string
+  ) {
     this.uploads.deleteUpload({ workspaceId, uploadFileId, actorUserId: "dev-user" });
-    return;
   }
 }
