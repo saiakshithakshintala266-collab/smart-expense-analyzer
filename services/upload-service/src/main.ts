@@ -1,4 +1,10 @@
+import * as path from "path";
+import * as dotenv from "dotenv";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
 import "reflect-metadata";
+import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
