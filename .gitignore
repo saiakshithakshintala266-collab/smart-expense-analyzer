@@ -5,5 +5,12 @@ apps/web/.next/**
 # Node dependencies
 **/node_modules/
 
-# pnpm local artifacts
-pnpm/
+# build outputs
+**/dist/
+**/dist/**
+
+# local env files
+**/.env.local
+
+# local docker scratch folders (if accidentally created)
+docker/

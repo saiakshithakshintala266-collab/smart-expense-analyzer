@@ -9,6 +9,11 @@
     "test": "pnpm -r test"
   },
   "devDependencies": {
-    "turbo": "^2.8.10"
+    "turbo": "^2.8.10",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.996.0",
+    "@aws-sdk/util-dynamodb": "^3.379.0"
   }
 }
