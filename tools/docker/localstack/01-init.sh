@@ -20,6 +20,19 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
+# Transactions table
+awslocal dynamodb create-table \
+  --table-name Transactions \
+  --attribute-definitions \
+    AttributeName=PK,AttributeType=S \
+    AttributeName=SK,AttributeType=S \
+    AttributeName=GSI2PK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --global-secondary-indexes \
+    'IndexName=GSI2,KeySchema=[{AttributeName=GSI2PK,KeyType=HASH}],Projection={ProjectionType=ALL}' \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
 # ---------- Events (SNS -> SQS) ----------
 TOPIC_NAME="sea-events"
 EXTRACTION_QUEUE_NAME="sea-extraction-queue"
@@ -41,7 +54,7 @@ EXTRACTION_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
   --output text)"
 
 # 4) Allow SNS → extraction queue
-EXTRACTION_POLICY="$(cat <<EOF
+EXTRACTION_POLICY="$(cat <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -57,7 +70,7 @@ EXTRACTION_POLICY="$(cat <<EOF
     }
   ]
 }
-EOF
+POLICY
 )"
 
 awslocal sqs set-queue-attributes \
@@ -90,7 +103,7 @@ TRANSACTIONS_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
   --output text)"
 
 # 8) Allow SNS → transactions queue
-TRANSACTIONS_POLICY="$(cat <<EOF
+TRANSACTIONS_POLICY="$(cat <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -106,7 +119,7 @@ TRANSACTIONS_POLICY="$(cat <<EOF
     }
   ]
 }
-EOF
+POLICY
 )"
 
 awslocal sqs set-queue-attributes \
@@ -131,6 +144,7 @@ echo "LocalStack initialized:"
 echo "  S3:       sea-uploads-dev"
 echo "  DynamoDB: UploadFiles"
 echo "  DynamoDB: ExtractedDocs"
+echo "  DynamoDB: Transactions"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
 echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
 echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})"
