@@ -143,7 +143,10 @@ export class AnalyticsRepo {
     countDelta: number
   ): Promise<void> {
     // Truncate merchant to 64 chars for SK safety
-    const safeMerchant = merchant.slice(0, 64).replace(/[^a-zA-Z0-9 _\-]/g, "");
+    const safeMerchant = merchant.slice(0, 64)
+  .replace(/[^a-zA-Z0-9 _\-]/g, "")
+  .replace(/ +/g, "_")
+  .toLowerCase();
     await this.increment(
       pk(workspaceId),
       `MERCHANT#${yearMonth}#${safeMerchant}`,
