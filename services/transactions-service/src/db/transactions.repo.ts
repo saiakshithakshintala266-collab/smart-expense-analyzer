@@ -178,20 +178,20 @@ export class TransactionsRepo {
   }
 
   async getByExtractedDocumentId(
-    extractedDocumentId: string
-  ): Promise<TransactionRecord | null> {
-    const res = await this.ddb.send(
-      new QueryCommand({
-        TableName: this.tableName,
-        IndexName: "GSI2",
-        KeyConditionExpression: "GSI2PK = :gsi2pk",
-        ExpressionAttributeValues: marshall({ ":gsi2pk": gsi2pk(extractedDocumentId) }),
-        Limit: 1
-      })
-    );
-    if (!res.Items || res.Items.length === 0) return null;
-    return stripKeys(unmarshall(res.Items[0]) as DbItem);
-  }
+  workspaceId: string,
+  extractedDocumentId: string
+): Promise<TransactionRecord | null> {
+  const res = await this.ddb.send(
+    new QueryCommand({
+      TableName: this.tableName,
+      KeyConditionExpression: "PK = :pk",
+      ExpressionAttributeValues: marshall({ ":pk": pk(workspaceId) })
+    })
+  );
+
+  const items = (res.Items ?? []).map((i) => stripKeys(unmarshall(i) as DbItem));
+  return items.find((r) => r.extractedDocumentId === extractedDocumentId) ?? null;
+}
 }
 
 function pk(workspaceId: string): string { return `WS#${workspaceId}`; }
