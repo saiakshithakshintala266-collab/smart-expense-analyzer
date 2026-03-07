@@ -23,13 +23,16 @@ awslocal dynamodb create-table \
 # Transactions table
 awslocal dynamodb create-table \
   --table-name Transactions \
-  --attribute-definitions \
-    AttributeName=PK,AttributeType=S \
-    AttributeName=SK,AttributeType=S \
-    AttributeName=GSI1PK,AttributeType=S \
-    AttributeName=GSI1SK,AttributeType=S \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
   --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
-  --global-secondary-indexes '[{"IndexName":"GSI1","KeySchema":[{"AttributeName":"GSI1PK","KeyType":"HASH"},{"AttributeName":"GSI1SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}]' \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
+# AnalyticsSummaries table
+awslocal dynamodb create-table \
+  --table-name AnalyticsSummaries \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
@@ -174,13 +177,62 @@ if [[ -z "${EXISTING_CATEGORIZATION_SUB}" || "${EXISTING_CATEGORIZATION_SUB}" ==
   awslocal sns subscribe     --topic-arn "${TOPIC_ARN}"     --protocol sqs     --notification-endpoint "${CATEGORIZATION_QUEUE_ARN}"     >/dev/null 2>&1 || true
 fi
 
+# ── Analytics Queue ──────────────────────────────────────────────────────────
+
+ANALYTICS_QUEUE_NAME="sea-analytics-queue"
+
+ANALYTICS_QUEUE_URL="$(awslocal sqs create-queue --queue-name "${ANALYTICS_QUEUE_NAME}" --query 'QueueUrl' --output text)"
+
+ANALYTICS_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
+  --queue-url "${ANALYTICS_QUEUE_URL}" \
+  --attribute-names QueueArn \
+  --query 'Attributes.QueueArn' \
+  --output text)"
+
+ANALYTICS_POLICY="$(cat <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Allow-SNS-SendMessage",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${ANALYTICS_QUEUE_ARN}",
+      "Condition": {
+        "ArnEquals": { "aws:SourceArn": "${TOPIC_ARN}" }
+      }
+    }
+  ]
+}
+POLICY
+)"
+
+awslocal sqs set-queue-attributes \
+  --queue-url "${ANALYTICS_QUEUE_URL}" \
+  --attributes Policy="$(echo "${ANALYTICS_POLICY}" | tr -d '\n')" \
+  >/dev/null 2>&1 || true
+
+EXISTING_ANALYTICS_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}" \
+  --query "Subscriptions[?Endpoint=='${ANALYTICS_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
+
+if [[ -z "${EXISTING_ANALYTICS_SUB}" || "${EXISTING_ANALYTICS_SUB}" == "None" ]]; then
+  awslocal sns subscribe \
+    --topic-arn "${TOPIC_ARN}" \
+    --protocol sqs \
+    --notification-endpoint "${ANALYTICS_QUEUE_ARN}" \
+    >/dev/null 2>&1 || true
+fi
+
 # ---------- Summary ----------
 echo "LocalStack initialized:"
 echo "  S3:       sea-uploads-dev"
 echo "  DynamoDB: UploadFiles"
 echo "  DynamoDB: ExtractedDocs"
-echo "  DynamoDB: Transactions"
+echo "  DynamoDB: Transactions
+  DynamoDB: AnalyticsSummaries"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
 echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
 echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})
-  SQS:      ${CATEGORIZATION_QUEUE_NAME} (${CATEGORIZATION_QUEUE_URL})"
+  SQS:      ${CATEGORIZATION_QUEUE_NAME} (${CATEGORIZATION_QUEUE_URL})
+  SQS:      ${ANALYTICS_QUEUE_NAME} (${ANALYTICS_QUEUE_URL})"
