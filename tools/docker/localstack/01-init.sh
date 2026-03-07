@@ -36,6 +36,14 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
+# AnomalyDetections table
+awslocal dynamodb create-table \
+  --table-name AnomalyDetections \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
 # ---------- Events (SNS -> SQS) ----------
 TOPIC_NAME="sea-events"
 EXTRACTION_QUEUE_NAME="sea-extraction-queue"
@@ -224,15 +232,64 @@ if [[ -z "${EXISTING_ANALYTICS_SUB}" || "${EXISTING_ANALYTICS_SUB}" == "None" ]]
     >/dev/null 2>&1 || true
 fi
 
+# ── Anomaly Queue ────────────────────────────────────────────────────────────
+
+ANOMALY_QUEUE_NAME="sea-anomaly-queue"
+
+ANOMALY_QUEUE_URL="$(awslocal sqs create-queue --queue-name "${ANOMALY_QUEUE_NAME}" --query 'QueueUrl' --output text)"
+
+ANOMALY_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
+  --queue-url "${ANOMALY_QUEUE_URL}" \
+  --attribute-names QueueArn \
+  --query 'Attributes.QueueArn' \
+  --output text)"
+
+ANOMALY_POLICY="$(cat <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Allow-SNS-SendMessage",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${ANOMALY_QUEUE_ARN}",
+      "Condition": {
+        "ArnEquals": { "aws:SourceArn": "${TOPIC_ARN}" }
+      }
+    }
+  ]
+}
+POLICY
+)"
+
+awslocal sqs set-queue-attributes \
+  --queue-url "${ANOMALY_QUEUE_URL}" \
+  --attributes Policy="$(echo "${ANOMALY_POLICY}" | tr -d '\n')" \
+  >/dev/null 2>&1 || true
+
+EXISTING_ANOMALY_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}" \
+  --query "Subscriptions[?Endpoint=='${ANOMALY_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
+
+if [[ -z "${EXISTING_ANOMALY_SUB}" || "${EXISTING_ANOMALY_SUB}" == "None" ]]; then
+  awslocal sns subscribe \
+    --topic-arn "${TOPIC_ARN}" \
+    --protocol sqs \
+    --notification-endpoint "${ANOMALY_QUEUE_ARN}" \
+    >/dev/null 2>&1 || true
+fi
+
 # ---------- Summary ----------
 echo "LocalStack initialized:"
 echo "  S3:       sea-uploads-dev"
 echo "  DynamoDB: UploadFiles"
 echo "  DynamoDB: ExtractedDocs"
 echo "  DynamoDB: Transactions
-  DynamoDB: AnalyticsSummaries"
+  DynamoDB: AnalyticsSummaries
+  DynamoDB: AnomalyDetections"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
 echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
 echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})
   SQS:      ${CATEGORIZATION_QUEUE_NAME} (${CATEGORIZATION_QUEUE_URL})
-  SQS:      ${ANALYTICS_QUEUE_NAME} (${ANALYTICS_QUEUE_URL})"
+  SQS:      ${ANALYTICS_QUEUE_NAME} (${ANALYTICS_QUEUE_URL})
+  SQS:      ${ANOMALY_QUEUE_NAME} (${ANOMALY_QUEUE_URL})"
