@@ -44,6 +44,14 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
+# Notifications table
+awslocal dynamodb create-table \
+  --table-name Notifications \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
 # ---------- Events (SNS -> SQS) ----------
 TOPIC_NAME="sea-events"
 EXTRACTION_QUEUE_NAME="sea-extraction-queue"
@@ -279,6 +287,53 @@ if [[ -z "${EXISTING_ANOMALY_SUB}" || "${EXISTING_ANOMALY_SUB}" == "None" ]]; th
     >/dev/null 2>&1 || true
 fi
 
+# ── Notifications Queue ──────────────────────────────────────────────────────
+
+NOTIFICATIONS_QUEUE_NAME="sea-notifications-queue"
+
+NOTIFICATIONS_QUEUE_URL="$(awslocal sqs create-queue --queue-name "${NOTIFICATIONS_QUEUE_NAME}" --query 'QueueUrl' --output text)"
+
+NOTIFICATIONS_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
+  --queue-url "${NOTIFICATIONS_QUEUE_URL}" \
+  --attribute-names QueueArn \
+  --query 'Attributes.QueueArn' \
+  --output text)"
+
+NOTIFICATIONS_POLICY="$(cat <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Allow-SNS-SendMessage",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${NOTIFICATIONS_QUEUE_ARN}",
+      "Condition": {
+        "ArnEquals": { "aws:SourceArn": "${TOPIC_ARN}" }
+      }
+    }
+  ]
+}
+POLICY
+)"
+
+awslocal sqs set-queue-attributes \
+  --queue-url "${NOTIFICATIONS_QUEUE_URL}" \
+  --attributes Policy="$(echo "${NOTIFICATIONS_POLICY}" | tr -d '\n')" \
+  >/dev/null 2>&1 || true
+
+EXISTING_NOTIFICATIONS_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}" \
+  --query "Subscriptions[?Endpoint=='${NOTIFICATIONS_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
+
+if [[ -z "${EXISTING_NOTIFICATIONS_SUB}" || "${EXISTING_NOTIFICATIONS_SUB}" == "None" ]]; then
+  awslocal sns subscribe \
+    --topic-arn "${TOPIC_ARN}" \
+    --protocol sqs \
+    --notification-endpoint "${NOTIFICATIONS_QUEUE_ARN}" \
+    >/dev/null 2>&1 || true
+fi
+
 # ---------- Summary ----------
 echo "LocalStack initialized:"
 echo "  S3:       sea-uploads-dev"
@@ -286,10 +341,12 @@ echo "  DynamoDB: UploadFiles"
 echo "  DynamoDB: ExtractedDocs"
 echo "  DynamoDB: Transactions
   DynamoDB: AnalyticsSummaries
-  DynamoDB: AnomalyDetections"
+  DynamoDB: AnomalyDetections
+  DynamoDB: Notifications"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
 echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
 echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})
   SQS:      ${CATEGORIZATION_QUEUE_NAME} (${CATEGORIZATION_QUEUE_URL})
   SQS:      ${ANALYTICS_QUEUE_NAME} (${ANALYTICS_QUEUE_URL})
-  SQS:      ${ANOMALY_QUEUE_NAME} (${ANOMALY_QUEUE_URL})"
+  SQS:      ${ANOMALY_QUEUE_NAME} (${ANOMALY_QUEUE_URL})
+  SQS:      ${NOTIFICATIONS_QUEUE_NAME} (${NOTIFICATIONS_QUEUE_URL})"
