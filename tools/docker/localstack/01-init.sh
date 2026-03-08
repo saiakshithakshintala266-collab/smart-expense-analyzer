@@ -52,6 +52,14 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
+# ChatConversations table
+awslocal dynamodb create-table \
+  --table-name ChatConversations \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
 # ---------- Events (SNS -> SQS) ----------
 TOPIC_NAME="sea-events"
 EXTRACTION_QUEUE_NAME="sea-extraction-queue"
@@ -342,7 +350,8 @@ echo "  DynamoDB: ExtractedDocs"
 echo "  DynamoDB: Transactions
   DynamoDB: AnalyticsSummaries
   DynamoDB: AnomalyDetections
-  DynamoDB: Notifications"
+  DynamoDB: Notifications
+  DynamoDB: ChatConversations"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
 echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
 echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})
