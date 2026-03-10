@@ -41,6 +41,7 @@ export class TransactionsService {
 
     // Idempotency — skip if already processed this extraction
     const existing = await this.repo.getByExtractedDocumentId(
+      event.workspaceId,
       event.extractedDocumentId
     );
 

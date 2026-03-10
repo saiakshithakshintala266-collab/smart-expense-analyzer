@@ -1,6 +1,7 @@
 // File: services/transactions-service/src/domain/normalizer.ts
+import { v4 as uuidv4 } from "uuid";
 import { ExtractionCompletedEvent, ExtractedField } from "./events";
-import { TransactionRecord } from "../db/transactions.repo";
+import { TransactionRecord, TransactionSource } from "../db/transactions.repo";
 
 /**
  * Maps an extraction.completed.v1 event into one or more canonical TransactionRecords.

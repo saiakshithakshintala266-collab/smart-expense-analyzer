@@ -1,5 +1,7 @@
 packages:
   - "apps/*"
   - "services/**"
-  - "shared/**"
+  - "shared/libs/*"
+  - 'shared/config/*'
+  - 'tests/contract' 
   - "infra/cdk"

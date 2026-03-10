@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Headers,
+  HttpCode,
   Param,
   Post,
   Query,
@@ -44,6 +45,7 @@ export class UploadsController {
   }
 
   @Post("/:uploadFileId/finalize")
+  @HttpCode(200) // FIX: POST defaults to 201; finalize returns existing resource state, not a new resource
   @UseGuards(DebugRoleGuard)
   @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })

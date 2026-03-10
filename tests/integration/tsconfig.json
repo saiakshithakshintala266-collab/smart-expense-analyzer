@@ -1,0 +1,22 @@
+{
+  "extends": "../../services/upload-service/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "jest":                  ["../../services/upload-service/node_modules/jest"],
+      "dotenv":                ["../../services/upload-service/node_modules/dotenv"],
+      "@aws-sdk/*":            ["../../services/upload-service/node_modules/@aws-sdk/*"],
+      "@nestjs/*":             ["../../services/upload-service/node_modules/@nestjs/*"],
+      "@shared/testing":       ["../../shared/libs/testing/src/index.ts"],
+      "@shared/logger":        ["../../shared/libs/logger/src/index.ts"],
+      "@shared/observability": ["../../shared/libs/observability/src/index.ts"],
+      "@shared/idempotency":   ["../../shared/libs/idempotency/src/index.ts"]
+    },
+    "typeRoots": ["../../services/upload-service/node_modules/@types"],
+    "types": ["jest", "node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["./**/*.ts"]
+}

@@ -6,9 +6,16 @@
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "test": "jest --config jest.config.ts",
+    "test:contract": "jest --config tests/contract/jest.config.ts",
+    "test:integration": "jest --config tests/integration/jest.config.ts",
+    "test:coverage": "jest --config jest.config.ts --coverage"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "turbo": "^2.8.10",
     "typescript": "^5.9.3"
   },
