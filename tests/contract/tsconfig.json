@@ -1,11 +1,15 @@
 {
-  "extends": "../../shared/config/tsconfig/tsconfig.base.json",
+  "extends": "../../services/upload-service/tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
+    "typeRoots": [
+      "../../node_modules/@types"
+    ],
     "paths": {
       "@shared/testing":       ["../../shared/libs/testing/src/index.ts"],
       "@shared/logger":        ["../../shared/libs/logger/src/index.ts"],
@@ -13,5 +17,9 @@
       "@shared/idempotency":   ["../../shared/libs/idempotency/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "./**/*.ts",
+    "../../services/upload-service/src/**/*.ts",
+    "../../services/transactions-service/src/**/*.ts"
+  ]
 }
