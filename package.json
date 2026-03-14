@@ -9,10 +9,14 @@
     "test": "jest --config jest.config.ts",
     "test:contract": "jest --config tests/contract/jest.config.ts",
     "test:integration": "jest --config tests/integration/jest.config.ts",
-    "test:coverage": "jest --config jest.config.ts --coverage"
+    "test:coverage": "jest --config jest.config.ts --coverage",
+    "dev:services": "concurrently --names \"upload,extraction,transactions,categorization,analytics,anomaly,notification,chat,auth\" --prefix-colors \"cyan,green,yellow,magenta,blue,red,white,gray,greenBright\" \"pnpm --filter @services/upload-service dev\" \"pnpm --filter @services/extraction-service dev\" \"pnpm --filter @services/transactions-service dev\" \"pnpm --filter @services/categorization-service dev\" \"pnpm --filter @services/analytics-service dev\" \"pnpm --filter @services/anomaly-service dev\" \"pnpm --filter @services/notification-service dev\" \"pnpm --filter @services/chat-service dev\" \"pnpm --filter @services/auth-service dev\"",
+    "dev:web": "pnpm --filter @apps/web dev",
+    "dev:all": "concurrently --names \"services,web\" \"pnpm dev:services\" \"pnpm dev:web\""
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "concurrently": "^9.2.1",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",

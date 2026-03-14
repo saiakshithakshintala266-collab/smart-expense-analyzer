@@ -60,6 +60,30 @@ awslocal dynamodb create-table \
   --billing-mode PAY_PER_REQUEST \
   >/dev/null 2>&1 || true
 
+# Users table
+awslocal dynamodb create-table \
+  --table-name Users \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
+# Workspaces table
+awslocal dynamodb create-table \
+  --table-name Workspaces \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
+# Sessions table
+awslocal dynamodb create-table \
+  --table-name Sessions \
+  --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+  --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST \
+  >/dev/null 2>&1 || true
+
 # ---------- Events (SNS -> SQS) ----------
 TOPIC_NAME="sea-events"
 EXTRACTION_QUEUE_NAME="sea-extraction-queue"
@@ -119,17 +143,14 @@ fi
 
 # ── Transactions Queue ────────────────────────────────────────────────────────
 
-# 6) Create transactions SQS queue
 TRANSACTIONS_QUEUE_URL="$(awslocal sqs create-queue --queue-name "${TRANSACTIONS_QUEUE_NAME}" --query 'QueueUrl' --output text)"
 
-# 7) Get transactions queue ARN
 TRANSACTIONS_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
   --queue-url "${TRANSACTIONS_QUEUE_URL}" \
   --attribute-names QueueArn \
   --query 'Attributes.QueueArn' \
   --output text)"
 
-# 8) Allow SNS → transactions queue
 TRANSACTIONS_POLICY="$(cat <<POLICY
 {
   "Version": "2012-10-17",
@@ -154,7 +175,6 @@ awslocal sqs set-queue-attributes \
   --attributes Policy="$(echo "${TRANSACTIONS_POLICY}" | tr -d '\n')" \
   >/dev/null 2>&1 || true
 
-# 9) Subscribe transactions queue to SNS topic
 EXISTING_TRANSACTIONS_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}" \
   --query "Subscriptions[?Endpoint=='${TRANSACTIONS_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
 
@@ -166,13 +186,17 @@ if [[ -z "${EXISTING_TRANSACTIONS_SUB}" || "${EXISTING_TRANSACTIONS_SUB}" == "No
     >/dev/null 2>&1 || true
 fi
 
-# ── Categorization Queue ─────────────────────────────────────────────────────
+# ── Categorization Queue ──────────────────────────────────────────────────────
 
 CATEGORIZATION_QUEUE_NAME="sea-categorization-queue"
 
 CATEGORIZATION_QUEUE_URL="$(awslocal sqs create-queue --queue-name "${CATEGORIZATION_QUEUE_NAME}" --query 'QueueUrl' --output text)"
 
-CATEGORIZATION_QUEUE_ARN="$(awslocal sqs get-queue-attributes   --queue-url "${CATEGORIZATION_QUEUE_URL}"   --attribute-names QueueArn   --query 'Attributes.QueueArn'   --output text)"
+CATEGORIZATION_QUEUE_ARN="$(awslocal sqs get-queue-attributes \
+  --queue-url "${CATEGORIZATION_QUEUE_URL}" \
+  --attribute-names QueueArn \
+  --query 'Attributes.QueueArn' \
+  --output text)"
 
 CATEGORIZATION_POLICY="$(cat <<POLICY
 {
@@ -193,15 +217,23 @@ CATEGORIZATION_POLICY="$(cat <<POLICY
 POLICY
 )"
 
-awslocal sqs set-queue-attributes   --queue-url "${CATEGORIZATION_QUEUE_URL}"   --attributes Policy="$(echo "${CATEGORIZATION_POLICY}" | tr -d '\n')"   >/dev/null 2>&1 || true
+awslocal sqs set-queue-attributes \
+  --queue-url "${CATEGORIZATION_QUEUE_URL}" \
+  --attributes Policy="$(echo "${CATEGORIZATION_POLICY}" | tr -d '\n')" \
+  >/dev/null 2>&1 || true
 
-EXISTING_CATEGORIZATION_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}"   --query "Subscriptions[?Endpoint=='${CATEGORIZATION_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
+EXISTING_CATEGORIZATION_SUB="$(awslocal sns list-subscriptions-by-topic --topic-arn "${TOPIC_ARN}" \
+  --query "Subscriptions[?Endpoint=='${CATEGORIZATION_QUEUE_ARN}'].SubscriptionArn | [0]" --output text || true)"
 
 if [[ -z "${EXISTING_CATEGORIZATION_SUB}" || "${EXISTING_CATEGORIZATION_SUB}" == "None" ]]; then
-  awslocal sns subscribe     --topic-arn "${TOPIC_ARN}"     --protocol sqs     --notification-endpoint "${CATEGORIZATION_QUEUE_ARN}"     >/dev/null 2>&1 || true
+  awslocal sns subscribe \
+    --topic-arn "${TOPIC_ARN}" \
+    --protocol sqs \
+    --notification-endpoint "${CATEGORIZATION_QUEUE_ARN}" \
+    >/dev/null 2>&1 || true
 fi
 
-# ── Analytics Queue ──────────────────────────────────────────────────────────
+# ── Analytics Queue ───────────────────────────────────────────────────────────
 
 ANALYTICS_QUEUE_NAME="sea-analytics-queue"
 
@@ -248,7 +280,7 @@ if [[ -z "${EXISTING_ANALYTICS_SUB}" || "${EXISTING_ANALYTICS_SUB}" == "None" ]]
     >/dev/null 2>&1 || true
 fi
 
-# ── Anomaly Queue ────────────────────────────────────────────────────────────
+# ── Anomaly Queue ─────────────────────────────────────────────────────────────
 
 ANOMALY_QUEUE_NAME="sea-anomaly-queue"
 
@@ -295,7 +327,7 @@ if [[ -z "${EXISTING_ANOMALY_SUB}" || "${EXISTING_ANOMALY_SUB}" == "None" ]]; th
     >/dev/null 2>&1 || true
 fi
 
-# ── Notifications Queue ──────────────────────────────────────────────────────
+# ── Notifications Queue ───────────────────────────────────────────────────────
 
 NOTIFICATIONS_QUEUE_NAME="sea-notifications-queue"
 
@@ -347,15 +379,18 @@ echo "LocalStack initialized:"
 echo "  S3:       sea-uploads-dev"
 echo "  DynamoDB: UploadFiles"
 echo "  DynamoDB: ExtractedDocs"
-echo "  DynamoDB: Transactions
-  DynamoDB: AnalyticsSummaries
-  DynamoDB: AnomalyDetections
-  DynamoDB: Notifications
-  DynamoDB: ChatConversations"
+echo "  DynamoDB: Transactions"
+echo "  DynamoDB: AnalyticsSummaries"
+echo "  DynamoDB: AnomalyDetections"
+echo "  DynamoDB: Notifications"
+echo "  DynamoDB: ChatConversations"
+echo "  DynamoDB: Users"
+echo "  DynamoDB: Workspaces"
+echo "  DynamoDB: Sessions"
 echo "  SNS:      ${TOPIC_NAME} (${TOPIC_ARN})"
-echo "  SQS:      ${EXTRACTION_QUEUE_NAME} (${EXTRACTION_QUEUE_URL})"
-echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME} (${TRANSACTIONS_QUEUE_URL})
-  SQS:      ${CATEGORIZATION_QUEUE_NAME} (${CATEGORIZATION_QUEUE_URL})
-  SQS:      ${ANALYTICS_QUEUE_NAME} (${ANALYTICS_QUEUE_URL})
-  SQS:      ${ANOMALY_QUEUE_NAME} (${ANOMALY_QUEUE_URL})
-  SQS:      ${NOTIFICATIONS_QUEUE_NAME} (${NOTIFICATIONS_QUEUE_URL})"
+echo "  SQS:      ${EXTRACTION_QUEUE_NAME}"
+echo "  SQS:      ${TRANSACTIONS_QUEUE_NAME}"
+echo "  SQS:      ${CATEGORIZATION_QUEUE_NAME}"
+echo "  SQS:      ${ANALYTICS_QUEUE_NAME}"
+echo "  SQS:      ${ANOMALY_QUEUE_NAME}"
+echo "  SQS:      ${NOTIFICATIONS_QUEUE_NAME}"
