@@ -35,9 +35,9 @@ export default function LoginPage() {
 
       saveSession(data);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong.");
-    } finally {
+    } catch (err: unknown) {
+  setError(err instanceof Error ? err.message : "Something went wrong.");
+} finally {
       setLoading(false);
     }
   }
