@@ -2,39 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
+  --background: 224 15% 8%;
+  --foreground: 213 31% 91%;
+  --primary: 162 73% 37%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 224 15% 13%;
+  --secondary-foreground: 213 31% 91%;
+  --muted: 224 15% 13%;
+  --muted-foreground: 215 16% 57%;
+  --accent: 224 15% 16%;
+  --accent-foreground: 213 31% 91%;
+  --card: 224 15% 11%;
+  --card-foreground: 213 31% 91%;
+  --border: 224 15% 18%;
+  --input: 224 15% 13%;
+  --ring: 162 73% 37%;
+  --radius: 0.75rem;
   color-scheme: dark;
 }
 
-html,
-body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
-  @apply bg-black text-white antialiased;
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
 }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
 
 @layer components {
   .glass {
-    @apply border border-white/10 bg-white/5 backdrop-blur-xl shadow-glass;
+    @apply border border-white/10 bg-white/5 backdrop-blur-xl;
   }
-
-  .glow-border {
-    background:
-      radial-gradient(1200px 600px at 10% 10%, rgba(124, 58, 237, 0.32), transparent 55%),
-      radial-gradient(900px 450px at 85% 15%, rgba(16, 185, 129, 0.22), transparent 55%),
-      radial-gradient(900px 550px at 60% 85%, rgba(59, 130, 246, 0.18), transparent 55%);
+  .card {
+    @apply rounded-xl border border-border bg-card p-4;
   }
-
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold
-    bg-gradient-to-r from-violet-500 to-emerald-400 text-black shadow-glow
-    hover:opacity-95 active:opacity-90 transition;
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium
+    bg-primary text-primary-foreground hover:opacity-90 active:opacity-80 transition-all;
   }
-
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium
-    border border-white/15 bg-white/5 hover:bg-white/10 transition;
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium
+    text-muted-foreground hover:text-foreground hover:bg-secondary transition-all;
+  }
+  .input {
+    @apply w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm
+    text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-all;
   }
 }
