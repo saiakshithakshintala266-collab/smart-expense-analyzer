@@ -57,10 +57,11 @@ export default function UploadsPage() {
 
       update(index, { status: "done", progress: 100, uploadFile: created.uploadFile });
       toast.success(`${file.name} uploaded successfully`);
-    } catch (err: any) {
-      update(index, { status: "error", error: err.message });
-      toast.error(`Failed to upload ${file.name}: ${err.message}`);
-    }
+    } catch (err: unknown) {
+  const message = err instanceof Error ? err.message : "Upload failed";
+  update(index, { status: "error", error: message });
+  toast.error(`Failed to upload ${file.name}: ${message}`);
+}
   };
 
   const onDrop = useCallback((accepted: File[]) => {
@@ -72,6 +73,7 @@ export default function UploadsPage() {
   }));
   setUploads((prev) => [...prev, ...newItems]);
   accepted.forEach((file, i) => processFile(file, startIndex + i));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [uploads.length]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
