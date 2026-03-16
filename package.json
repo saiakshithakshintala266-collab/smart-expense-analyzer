@@ -26,5 +26,11 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.996.0",
     "@aws-sdk/util-dynamodb": "^3.379.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "unrs-resolver"
+    ]
   }
 }
