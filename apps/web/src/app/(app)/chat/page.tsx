@@ -178,6 +178,7 @@ export default function ChatPage() {
                 }
               }}
               placeholder="Ask about your finances..."
+              aria-label="Chat message input"
               rows={1}
               className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
             />
