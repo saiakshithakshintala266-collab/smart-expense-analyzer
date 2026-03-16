@@ -9,37 +9,49 @@ import { analyticsApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import type { AnalyticsSummary, DailyAnalytics } from "@/types";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Legend, Cell
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  Legend,
+  Cell,
 } from "recharts";
 
 export default function InsightsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [daily, setDaily] = useState<DailyAnalytics[]>([]);
-  const [trends, setTrends] = useState<{ yearMonth: string; totalAmount: number; transactionCount: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [trends, setTrends] = useState<
+    { yearMonth: string; totalAmount: number; transactionCount: number }[]
+  >([]);
 
   useEffect(() => {
     async function load() {
-      try {
-        const [summaryRes, dailyRes, trendsRes] = await Promise.allSettled([
-          analyticsApi.getSummary(),
-          analyticsApi.getDaily(),
-          analyticsApi.getTrends(),
-        ]);
-        if (summaryRes.status === "fulfilled") setSummary(summaryRes.value);
-        if (dailyRes.status === "fulfilled") {
-          const data = dailyRes.value;
-          setDaily(Array.isArray(data) ? data : data.items ?? []);
-        }
-        if (trendsRes.status === "fulfilled") {
-          const data = trendsRes.value;
-          setTrends(Array.isArray(data) ? data : data.items ?? []);
-        }
-      } finally {
-        setLoading(false);
+      const [summaryRes, dailyRes, trendsRes] = await Promise.allSettled([
+        analyticsApi.getSummary(),
+        analyticsApi.getDaily(),
+        analyticsApi.getTrends(),
+      ]);
+
+      if (summaryRes.status === "fulfilled") {
+        setSummary(summaryRes.value);
+      }
+
+      if (dailyRes.status === "fulfilled") {
+        const data = dailyRes.value;
+        setDaily(Array.isArray(data) ? data : data.items ?? []);
+      }
+
+      if (trendsRes.status === "fulfilled") {
+        const data = trendsRes.value;
+        setTrends(Array.isArray(data) ? data : data.items ?? []);
       }
     }
+
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -49,15 +61,14 @@ export default function InsightsPage() {
     : 0;
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl p-6 lg:p-8">
       <PageHeader
         title="Insights"
         description="AI-powered spending analysis"
         icon={TrendingUp}
       />
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Total spent"
           value={summary ? formatCurrency(summary.totalAmount) : "—"}
@@ -79,33 +90,40 @@ export default function InsightsPage() {
         <StatCard
           label="Top category"
           value={summary?.byCategory?.[0]?.category ?? "—"}
-          subtext={summary?.byCategory?.[0] ? formatCurrency(summary.byCategory[0].totalAmount) : undefined}
+          subtext={
+            summary?.byCategory?.[0]
+              ? formatCurrency(summary.byCategory[0].totalAmount)
+              : undefined
+          }
           trend="neutral"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Daily spend */}
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium text-muted-foreground mb-4">Daily spend</h2>
+          <h2 className="mb-4 text-sm font-medium text-muted-foreground">
+            Daily spend
+          </h2>
           {daily.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={daily} barSize={8}>
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10, fill: "hsl(215 16% 57%)" }}
-                  tickFormatter={(v) => new Date(v).getDate().toString()}
+                  tickFormatter={(value) =>
+                    new Date(value).getDate().toString()
+                  }
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tick={{ fontSize: 10, fill: "hsl(215 16% 57%)" }}
-                  tickFormatter={(v) => `$${v}`}
+                  tickFormatter={(value) => `$${value}`}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(v) => formatCurrency(Number(v))}
+                  formatter={(value) => formatCurrency(Number(value))}
                   contentStyle={{
                     background: "hsl(224 15% 11%)",
                     border: "1px solid hsl(224 15% 18%)",
@@ -114,8 +132,12 @@ export default function InsightsPage() {
                   }}
                 />
                 <Bar dataKey="totalAmount" radius={[3, 3, 0, 0]}>
-                  {daily.map((_, i) => (
-                    <Cell key={i} fill="hsl(162 73% 37%)" fillOpacity={0.8} />
+                  {daily.map((_, index) => (
+                    <Cell
+                      key={index}
+                      fill="hsl(162 73% 37%)"
+                      fillOpacity={0.8}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -129,13 +151,17 @@ export default function InsightsPage() {
           )}
         </div>
 
-        {/* Monthly trends */}
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium text-muted-foreground mb-4">Monthly trends</h2>
+          <h2 className="mb-4 text-sm font-medium text-muted-foreground">
+            Monthly trends
+          </h2>
           {trends.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={trends}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(224 15% 18%)" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(224 15% 18%)"
+                />
                 <XAxis
                   dataKey="yearMonth"
                   tick={{ fontSize: 10, fill: "hsl(215 16% 57%)" }}
@@ -144,12 +170,12 @@ export default function InsightsPage() {
                 />
                 <YAxis
                   tick={{ fontSize: 10, fill: "hsl(215 16% 57%)" }}
-                  tickFormatter={(v) => `$${v}`}
+                  tickFormatter={(value) => `$${value}`}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(v) => formatCurrency(Number(v))}
+                  formatter={(value) => formatCurrency(Number(value))}
                   contentStyle={{
                     background: "hsl(224 15% 11%)",
                     border: "1px solid hsl(224 15% 18%)",
@@ -178,30 +204,45 @@ export default function InsightsPage() {
         </div>
       </div>
 
-      {/* Category breakdown */}
-      <div className="rounded-xl border border-border bg-card p-4 mb-6">
-        <h2 className="text-sm font-medium text-muted-foreground mb-4">Spending by category</h2>
+      <div className="mb-6 rounded-xl border border-border bg-card p-4">
+        <h2 className="mb-4 text-sm font-medium text-muted-foreground">
+          Spending by category
+        </h2>
         {summary?.byCategory?.length ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
-              {summary.byCategory.map((cat) => {
+              {summary.byCategory.map((category) => {
                 const max = summary.byCategory[0].totalAmount;
-                const pct = (cat.totalAmount / max) * 100;
+                const percent = (category.totalAmount / max) * 100;
+
                 return (
-                  <div key={cat.category} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-28 truncate">{cat.category}</span>
-                    <div className="flex-1 h-2 rounded-full bg-secondary">
-                      <div className="h-2 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                  <div
+                    key={category.category}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="w-28 truncate text-xs text-muted-foreground">
+                      {category.category}
+                    </span>
+                    <div className="h-2 flex-1 rounded-full bg-secondary">
+                      <div
+                        className="h-2 rounded-full bg-primary"
+                        style={{ width: `${percent}%` }}
+                      />
                     </div>
-                    <span className="text-xs font-medium text-foreground w-16 text-right">
-                      {formatCurrency(cat.totalAmount)}
+                    <span className="w-16 text-right text-xs font-medium text-foreground">
+                      {formatCurrency(category.totalAmount)}
                     </span>
                   </div>
                 );
               })}
             </div>
+
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={summary.byCategory} layout="vertical" barSize={12}>
+              <BarChart
+                data={summary.byCategory}
+                layout="vertical"
+                barSize={12}
+              >
                 <XAxis type="number" hide />
                 <YAxis
                   type="category"
@@ -212,7 +253,7 @@ export default function InsightsPage() {
                   width={80}
                 />
                 <Tooltip
-                  formatter={(v) => formatCurrency(Number(v))}
+                  formatter={(value) => formatCurrency(Number(value))}
                   contentStyle={{
                     background: "hsl(224 15% 11%)",
                     border: "1px solid hsl(224 15% 18%)",
@@ -220,7 +261,12 @@ export default function InsightsPage() {
                     fontSize: "12px",
                   }}
                 />
-                <Bar dataKey="totalAmount" radius={[0, 3, 3, 0]} fill="hsl(162 73% 37%)" fillOpacity={0.8} />
+                <Bar
+                  dataKey="totalAmount"
+                  radius={[0, 3, 3, 0]}
+                  fill="hsl(162 73% 37%)"
+                  fillOpacity={0.8}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -233,21 +279,29 @@ export default function InsightsPage() {
         )}
       </div>
 
-      {/* Top merchants */}
       <div className="rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-medium text-muted-foreground mb-4">Top merchants</h2>
+        <h2 className="mb-4 text-sm font-medium text-muted-foreground">
+          Top merchants
+        </h2>
         {summary?.topMerchants?.length ? (
           <div className="divide-y divide-border">
-            {summary.topMerchants.map((m, i) => (
-              <div key={m.merchant} className="flex items-center gap-3 py-3">
+            {summary.topMerchants.map((merchant, index) => (
+              <div
+                key={merchant.merchant}
+                className="flex items-center gap-3 py-3"
+              >
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary text-xs font-medium text-muted-foreground">
-                  {i + 1}
+                  {index + 1}
                 </div>
-                <span className="flex-1 text-sm text-foreground capitalize">
-                  {m.merchant.replace(/_/g, " ")}
+                <span className="flex-1 text-sm capitalize text-foreground">
+                  {merchant.merchant.replace(/_/g, " ")}
                 </span>
-                <span className="text-xs text-muted-foreground">{m.transactionCount} txns</span>
-                <span className="text-sm font-medium text-foreground">{formatCurrency(m.totalAmount)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {merchant.transactionCount} txns
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {formatCurrency(merchant.totalAmount)}
+                </span>
               </div>
             ))}
           </div>
