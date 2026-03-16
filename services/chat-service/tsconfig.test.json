@@ -9,5 +9,6 @@
       "@shared/idempotency":   ["../../shared/libs/idempotency/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": []
 }
