@@ -32,9 +32,9 @@ export interface AnalyticsSummary {
   totalAmount: number;
   transactionCount: number;
   currency: string;
-  byCategory: { category: string; amount: number; count: number }[];
-  bySource: { source: string; amount: number; count: number }[];
-  topMerchants: { merchant: string; amount: number; count: number }[];
+  byCategory: { category: string; totalAmount: number; transactionCount: number; currency: string }[];
+  bySource: { source: string; totalAmount: number; transactionCount: number; currency: string }[];
+  topMerchants: { merchant: string; totalAmount: number; transactionCount: number; currency: string }[];
 }
 
 export interface DailyAnalytics {

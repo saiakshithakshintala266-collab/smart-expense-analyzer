@@ -65,12 +65,12 @@ export default function DashboardPage() {
         <StatCard
           label="Top category"
           value={summary?.byCategory?.[0]?.category ?? "—"}
-          subtext={summary?.byCategory?.[0] ? formatCurrency(summary.byCategory[0].amount) : undefined}
+          subtext={summary?.byCategory?.[0] ? formatCurrency(summary.byCategory[0].totalAmount) : undefined}
           trend="neutral"
         />
         <StatCard
           label="Largest expense"
-          value={summary?.topMerchants?.[0] ? formatCurrency(summary.topMerchants[0].amount) : "—"}
+          value={summary?.topMerchants?.[0] ? formatCurrency(summary.topMerchants[0].totalAmount) : "—"}
           subtext={summary?.topMerchants?.[0]?.merchant}
           trend="neutral"
         />
@@ -127,8 +127,8 @@ export default function DashboardPage() {
           {summary?.byCategory?.length ? (
             <div className="flex flex-col gap-2">
               {summary.byCategory.slice(0, 5).map((cat) => {
-                const max = summary.byCategory[0].amount;
-                const pct = (cat.amount / max) * 100;
+                const max = summary.byCategory[0].totalAmount;
+                const pct = (cat.totalAmount / max) * 100;
                 return (
                   <div key={cat.category} className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground w-24 truncate">{cat.category}</span>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                       />
                     </div>
                     <span className="text-xs font-medium text-foreground w-16 text-right">
-                      {formatCurrency(cat.amount)}
+                      {formatCurrency(cat.totalAmount)}
                     </span>
                   </div>
                 );
