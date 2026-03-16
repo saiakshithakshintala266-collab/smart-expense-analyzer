@@ -12,7 +12,7 @@ import { executeTool } from "../domain/tool.executor";
 
 const log = createLogger({ serviceName: "chat-service" });
 
-const MODEL_ID = "anthropic.claude-haiku-4-5-20251001";
+const MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 const MAX_TOOL_ROUNDS = 5; // prevent infinite loops
 
 const SYSTEM_PROMPT = `You are a helpful financial assistant for the Smart Expense Analyzer. 
@@ -27,11 +27,26 @@ When answering questions:
 - Today's date is ${new Date().toISOString().slice(0, 10)}`;
 
 export function createBedrockClient(): BedrockRuntimeClient {
-  const endpoint = process.env.AWS_ENDPOINT_URL;
-  return new BedrockRuntimeClient({
-    region: process.env.AWS_REGION ?? "us-east-1",
-    ...(endpoint ? { endpoint } : {})
-  });
+  const region =
+    process.env.BEDROCK_REGION ?? process.env.AWS_REGION ?? "us-east-1";
+
+  const bedrockAccessKeyId = process.env.BEDROCK_ACCESS_KEY_ID;
+  const bedrockSecretAccessKey = process.env.BEDROCK_SECRET_ACCESS_KEY;
+
+  const clientConfig: { region: string; credentials?: { accessKeyId: string; secretAccessKey: string } } = {
+    region,
+  };
+
+  // Only set explicit credentials when Bedrock-specific keys are provided.
+  // Otherwise, rely on the AWS SDK default credential provider chain.
+  if (bedrockAccessKeyId && bedrockSecretAccessKey) {
+    clientConfig.credentials = {
+      accessKeyId: bedrockAccessKeyId,
+      secretAccessKey: bedrockSecretAccessKey,
+    };
+  }
+
+  return new BedrockRuntimeClient(clientConfig);
 }
 
 export type ChatMessage = {
