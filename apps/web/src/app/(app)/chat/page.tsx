@@ -186,6 +186,7 @@ export default function ChatPage() {
               onClick={sendMessage}
               disabled={!input.trim() || sending}
               className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50 transition-all hover:opacity-90"
+              aria-label="Send message"
             >
               <Send className="h-3.5 w-3.5" />
             </button>
