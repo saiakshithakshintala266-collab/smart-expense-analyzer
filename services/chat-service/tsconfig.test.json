@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@shared/testing":       ["../../shared/libs/testing/src/index.ts"],
+      "@shared/logger":        ["../../shared/libs/logger/src/index.ts"],
+      "@shared/observability": ["../../shared/libs/observability/src/index.ts"],
+      "@shared/idempotency":   ["../../shared/libs/idempotency/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { anomalyApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
 import type { Anomaly } from "@/types";
-import toast from "react-hot-toast";
+// import toast from "react-hot-toast";
 
 const SEVERITY_STYLES = {
   high:   { badge: "bg-rose-500/10 text-rose-400 border-rose-500/20",   bar: "bg-rose-500" },
