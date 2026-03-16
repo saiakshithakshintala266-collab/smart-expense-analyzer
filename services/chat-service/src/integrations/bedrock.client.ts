@@ -27,13 +27,26 @@ When answering questions:
 - Today's date is ${new Date().toISOString().slice(0, 10)}`;
 
 export function createBedrockClient(): BedrockRuntimeClient {
-  return new BedrockRuntimeClient({
-    region: process.env.BEDROCK_REGION ?? process.env.AWS_REGION ?? "us-east-1",
-    credentials: {
-      accessKeyId: process.env.BEDROCK_ACCESS_KEY_ID ?? process.env.AWS_ACCESS_KEY_ID ?? "test",
-      secretAccessKey: process.env.BEDROCK_SECRET_ACCESS_KEY ?? process.env.AWS_SECRET_ACCESS_KEY ?? "test",
-    },
-  });
+  const region =
+    process.env.BEDROCK_REGION ?? process.env.AWS_REGION ?? "us-east-1";
+
+  const bedrockAccessKeyId = process.env.BEDROCK_ACCESS_KEY_ID;
+  const bedrockSecretAccessKey = process.env.BEDROCK_SECRET_ACCESS_KEY;
+
+  const clientConfig: { region: string; credentials?: { accessKeyId: string; secretAccessKey: string } } = {
+    region,
+  };
+
+  // Only set explicit credentials when Bedrock-specific keys are provided.
+  // Otherwise, rely on the AWS SDK default credential provider chain.
+  if (bedrockAccessKeyId && bedrockSecretAccessKey) {
+    clientConfig.credentials = {
+      accessKeyId: bedrockAccessKeyId,
+      secretAccessKey: bedrockSecretAccessKey,
+    };
+  }
+
+  return new BedrockRuntimeClient(clientConfig);
 }
 
 export type ChatMessage = {
