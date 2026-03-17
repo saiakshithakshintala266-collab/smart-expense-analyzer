@@ -9,7 +9,7 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
 export type TransactionStatus = "ACTIVE" | "DELETED";
-export type TransactionSource = "receipt" | "bank_csv" | "manual";
+export type TransactionSource = "receipt" | "bank_csv" | "manual" | "bank_statement";
 
 export type TransactionRecord = {
   id: string;

@@ -121,11 +121,12 @@ export class ExtractionService {
     correlationId: string
   ): Promise<void> {
     const result = await extractWithTextract({
-      textract: this.textract,
-      bucket: event.storageBucket,
-      key: event.storageKey,
-      contentType: event.contentType
-    });
+  textract: this.textract,
+  bucket: event.storageBucket,
+  key: event.storageKey,
+  contentType: event.contentType,
+  source: event.source
+});
 
     // Update DDB with results
     const updatedRecord: ExtractedDocRecord = {
@@ -231,14 +232,13 @@ export class ExtractionService {
 
 function resolveExtractionMethod(event: UploadUploadedEvent): "textract" | "csv_parser" {
   if (event.source === "bank_csv") return "csv_parser";
+  if (event.source === "bank_statement") return "textract";
 
   const ct = event.contentType.toLowerCase();
   if (ct === "text/csv" || ct === "application/csv") return "csv_parser";
 
-  // receipt / image / PDF → Textract
   return "textract";
 }
-
 function mustGetEnv(name: string): string {
   const v = process.env[name];
   if (!v || v.trim().length === 0) throw new Error(`Missing required env var: ${name}`);

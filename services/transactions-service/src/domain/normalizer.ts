@@ -14,12 +14,11 @@ export function normalizeExtraction(
   idGenerator: () => string,
   now: string
 ): TransactionRecord[] {
-  if (event.source === "bank_csv") {
+  if (event.source === "bank_csv" || event.source === "bank_statement") {
     return normalizeCsvRows(event, idGenerator, now);
   }
   return [normalizeReceiptOrImage(event, idGenerator, now)];
 }
-
 // ── Receipt / image ───────────────────────────────────────────────────────────
 
 function normalizeReceiptOrImage(
@@ -100,7 +99,7 @@ function normalizeCsvRows(
       merchant: item.description?.trim() || "Unknown Merchant",
       amount: item.totalPrice ?? 0,
       currency,
-      date: now.slice(0, 10),
+      date: item.date ?? now.slice(0, 10),
       extractionConfidence: item.confidence,
       status: "ACTIVE" as const,
       createdAt: now,

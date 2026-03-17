@@ -16,7 +16,7 @@ export type ExtractedDocRecord = {
   workspaceId: string;
   uploadFileId: string;
   status: ExtractionStatus;
-  source: "receipt" | "bank_csv" | "manual";
+  source: "receipt" | "bank_csv" | "manual" | "bank_statement";
   extractionMethod: "textract" | "csv_parser";
   fields: ExtractedField[];
   lineItems: ExtractedLineItem[];

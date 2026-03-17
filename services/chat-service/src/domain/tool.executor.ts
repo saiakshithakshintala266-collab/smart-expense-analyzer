@@ -5,16 +5,11 @@ const log = createLogger({ serviceName: "chat-service" });
 
 type ToolInput = Record<string, unknown>;
 
-/**
- * Executes a tool call by fetching data from the appropriate downstream service.
- * In LocalStack/dev, we call the services directly via HTTP.
- * In production these would be internal VPC calls.
- */
 export async function executeTool(
   toolName: string,
   toolInput: ToolInput,
   workspaceId: string
-): Promise<unknown> {
+): Promise<Record<string, unknown>> {
   const analyticsBase = mustGetEnv("ANALYTICS_SERVICE_URL");
   const anomalyBase = mustGetEnv("ANOMALY_SERVICE_URL");
 
@@ -24,17 +19,18 @@ export async function executeTool(
     case "get_monthly_summary": {
       const yearMonth = (toolInput.yearMonth as string) ?? currentYearMonth();
       const url = `${analyticsBase}/workspaces/${workspaceId}/analytics/summary?yearMonth=${yearMonth}`;
-      return await fetchJson(url);
+      const data = await fetchJson(url);
+      return toObject(data);
     }
 
     case "get_spending_trends": {
       const url = `${analyticsBase}/workspaces/${workspaceId}/analytics/trends`;
-      return await fetchJson(url);
+      const data = await fetchJson(url);
+      return Array.isArray(data) ? { trends: data } : toObject(data);
     }
 
     case "get_merchant_summary": {
       const yearMonth = (toolInput.yearMonth as string) ?? currentYearMonth();
-      // merchant data is embedded in monthly summary topMerchants
       const url = `${analyticsBase}/workspaces/${workspaceId}/analytics/summary?yearMonth=${yearMonth}`;
       const data = await fetchJson(url) as { topMerchants?: unknown[] };
       return { yearMonth, merchants: data.topMerchants ?? [] };
@@ -45,18 +41,27 @@ export async function executeTool(
       const url = status
         ? `${anomalyBase}/workspaces/${workspaceId}/anomalies?status=${status}`
         : `${anomalyBase}/workspaces/${workspaceId}/anomalies`;
-      return await fetchJson(url);
+      const data = await fetchJson(url);
+      return Array.isArray(data) ? { anomalies: data } : toObject(data);
     }
 
     case "get_daily_breakdown": {
       const yearMonth = (toolInput.yearMonth as string) ?? currentYearMonth();
       const url = `${analyticsBase}/workspaces/${workspaceId}/analytics/daily?yearMonth=${yearMonth}`;
-      return await fetchJson(url);
+      const data = await fetchJson(url);
+      return Array.isArray(data) ? { days: data, yearMonth } : toObject(data);
     }
 
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
+}
+
+function toObject(data: unknown): Record<string, unknown> {
+  if (data === null || data === undefined) return {};
+  if (Array.isArray(data)) return { items: data };
+  if (typeof data === "object") return data as Record<string, unknown>;
+  return { value: data };
 }
 
 async function fetchJson(url: string): Promise<unknown> {

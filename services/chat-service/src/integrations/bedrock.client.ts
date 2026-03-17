@@ -12,8 +12,8 @@ import { executeTool } from "../domain/tool.executor";
 
 const log = createLogger({ serviceName: "chat-service" });
 
-const MODEL_ID = "anthropic.claude-haiku-4-5-20251001";
-const MAX_TOOL_ROUNDS = 5; // prevent infinite loops
+const MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+const MAX_TOOL_ROUNDS = 5;
 
 const SYSTEM_PROMPT = `You are a helpful financial assistant for the Smart Expense Analyzer. 
 You help users understand their spending patterns, identify anomalies, and make sense of their financial data.
@@ -27,11 +27,17 @@ When answering questions:
 - Today's date is ${new Date().toISOString().slice(0, 10)}`;
 
 export function createBedrockClient(): BedrockRuntimeClient {
-  const endpoint = process.env.AWS_ENDPOINT_URL;
-  return new BedrockRuntimeClient({
-    region: process.env.AWS_REGION ?? "us-east-1",
-    ...(endpoint ? { endpoint } : {})
-  });
+  const accessKeyId = process.env.BEDROCK_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.BEDROCK_SECRET_ACCESS_KEY;
+  const region = process.env.BEDROCK_REGION ?? process.env.AWS_REGION ?? "us-east-1";
+
+  const clientConfig: ConstructorParameters<typeof BedrockRuntimeClient>[0] = { region };
+
+  if (accessKeyId && secretAccessKey) {
+    clientConfig.credentials = { accessKeyId, secretAccessKey };
+  }
+
+  return new BedrockRuntimeClient(clientConfig);
 }
 
 export type ChatMessage = {
@@ -39,25 +45,17 @@ export type ChatMessage = {
   content: string;
 };
 
-/**
- * Runs the agentic tool-use loop:
- * 1. Send messages + tools to Bedrock
- * 2. If Bedrock calls a tool → execute it → append result → loop
- * 3. When Bedrock returns a text response → done
- */
 export async function chat(
   bedrock: BedrockRuntimeClient,
   history: ChatMessage[],
   userMessage: string,
   workspaceId: string
 ): Promise<string> {
-  // ── LocalStack mock ───────────────────────────────────────────────────────
-  if (process.env.AWS_ENDPOINT_URL) {
-    log.warn({ workspaceId }, "LocalStack detected — returning mock chat response");
+  if (process.env.USE_MOCK_BEDROCK === "true") {
+    log.warn({ workspaceId }, "Mock Bedrock enabled — returning mock chat response");
     return await mockChatResponse(userMessage, workspaceId);
   }
 
-  // ── Build message history ─────────────────────────────────────────────────
   const messages: BedrockMessage[] = [
     ...history.map((m) => ({
       role: m.role as "user" | "assistant",
@@ -74,7 +72,6 @@ export async function chat(
     }
   })) as unknown as Tool[];
 
-  // ── Agentic loop ──────────────────────────────────────────────────────────
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const res = await bedrock.send(
       new ConverseCommand({
@@ -90,7 +87,6 @@ export async function chat(
 
     messages.push(outputMessage);
 
-    // Text response — we're done
     if (res.stopReason === "end_turn") {
       const textBlock = outputMessage.content?.find((b) => "text" in b) as
         | { text: string }
@@ -98,7 +94,6 @@ export async function chat(
       return textBlock?.text ?? "I'm sorry, I couldn't generate a response.";
     }
 
-    // Tool use — execute each tool and append results
     if (res.stopReason === "tool_use") {
       const toolResults: ContentBlock[] = [];
 
@@ -139,7 +134,6 @@ export async function chat(
       continue;
     }
 
-    // Unexpected stop reason
     log.warn({ stopReason: res.stopReason }, "Unexpected stop reason");
     break;
   }
@@ -147,7 +141,8 @@ export async function chat(
   return "I'm sorry, I wasn't able to complete the request. Please try again.";
 }
 
-// ── LocalStack mock ───────────────────────────────────────────────────────────
+// ── Mock ──────────────────────────────────────────────────────────────────────
+
 async function mockChatResponse(userMessage: string, workspaceId: string): Promise<string> {
   const lower = userMessage.toLowerCase();
 
@@ -164,7 +159,7 @@ async function mockChatResponse(userMessage: string, workspaceId: string): Promi
     }
   }
 
-  if (lower.includes("trend") || lower.includes("last month") || lower.includes("compare") || lower.includes("more than") || lower.includes("over time")) {
+  if (lower.includes("trend") || lower.includes("last month") || lower.includes("compare") || lower.includes("over time")) {
     try {
       const analyticsBase = process.env.ANALYTICS_SERVICE_URL ?? "http://localhost:3005";
       const res = await fetch(`${analyticsBase}/workspaces/${workspaceId}/analytics/trends`);
@@ -189,7 +184,7 @@ async function mockChatResponse(userMessage: string, workspaceId: string): Promi
     }
   }
 
-  if (lower.includes("merchant") || lower.includes("starbucks") || lower.includes("most at") || lower.includes("shop")) {
+  if (lower.includes("merchant") || lower.includes("most at") || lower.includes("shop")) {
     try {
       const analyticsBase = process.env.ANALYTICS_SERVICE_URL ?? "http://localhost:3005";
       const ym = new Date().toISOString().slice(0, 7);
@@ -204,7 +199,7 @@ async function mockChatResponse(userMessage: string, workspaceId: string): Promi
     }
   }
 
-  if (lower.includes("categor") || lower.includes("dining") || lower.includes("groceries") || lower.includes("transport") || lower.includes("subscript") || lower.includes("entertainment") || lower.includes("healthcare")) {
+  if (lower.includes("categor") || lower.includes("dining") || lower.includes("groceries") || lower.includes("transport")) {
     try {
       const analyticsBase = process.env.ANALYTICS_SERVICE_URL ?? "http://localhost:3005";
       const ym = new Date().toISOString().slice(0, 7);

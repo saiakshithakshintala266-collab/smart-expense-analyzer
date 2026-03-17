@@ -13,16 +13,16 @@ export type UploadUploadedEvent = {
   originalFileName: string;
   contentType: string;
   sizeBytes: number;
-  source: "receipt" | "bank_csv" | "manual";
+  source: "receipt" | "bank_csv" | "manual" | "bank_statement";
   checksumSha256?: string;
 };
 
 // ── Outbound ─────────────────────────────────────────────────────────────────
 
 export type ExtractedField = {
-  key: string;       // e.g. "merchant", "total", "date", "tax", "currency"
+  key: string;
   value: string;
-  confidence?: number; // 0–1, from Textract or parser
+  confidence?: number;
 };
 
 export type ExtractedLineItem = {
@@ -30,6 +30,7 @@ export type ExtractedLineItem = {
   quantity?: number;
   unitPrice?: number;
   totalPrice?: number;
+  date?: string;
   confidence?: number;
 };
 
@@ -40,12 +41,12 @@ export type ExtractionCompletedEvent = {
   workspaceId: string;
   uploadFileId: string;
   extractedDocumentId: string;
-  source: "receipt" | "bank_csv" | "manual";
+  source: "receipt" | "bank_csv" | "manual" | "bank_statement";
   extractionMethod: "textract" | "csv_parser";
   fields: ExtractedField[];
   lineItems: ExtractedLineItem[];
-  rawTextractJobId?: string;       // for receipts/PDFs
-  csvRowCount?: number;            // for bank CSVs
+  rawTextractJobId?: string;
+  csvRowCount?: number;
   warnings: string[];
 };
 

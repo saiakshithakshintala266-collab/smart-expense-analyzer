@@ -42,7 +42,7 @@ export default function UploadsPage() {
         originalFileName: file.name,
         contentType: file.type || "application/octet-stream",
         sizeBytes: file.size,
-        source: "receipt",
+        source: file.type === "application/pdf" ? "bank_statement" : "receipt",
       });
 
       update(index, { progress: 50 });

@@ -2,16 +2,15 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
 export function createS3Client(): S3Client {
-  const endpoint = process.env.AWS_ENDPOINT_URL;
   const region = process.env.AWS_REGION ?? "us-east-1";
   const forcePathStyle = (process.env.S3_FORCE_PATH_STYLE ?? "false").toLowerCase() === "true";
+  // S3_ENDPOINT_URL is only set when explicitly needed (e.g. LocalStack testing)
+  // If not set → real AWS S3
+  const endpoint = process.env.S3_ENDPOINT_URL;
 
   return new S3Client({
     region,
-    endpoint,
-    forcePathStyle,
-
-    // IMPORTANT for LocalStack: disable checksum features that add x-amz-checksum-* to presigned URLs
+    ...(endpoint ? { endpoint, forcePathStyle } : {}),
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED"
   });
