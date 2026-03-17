@@ -13,6 +13,7 @@ export type ExtractedLineItem = {
   quantity?: number;
   unitPrice?: number;
   totalPrice?: number;
+  date?: string;
   confidence?: number;
 };
 
@@ -23,7 +24,7 @@ export type ExtractionCompletedEvent = {
   workspaceId: string;
   uploadFileId: string;
   extractedDocumentId: string;
-  source: "receipt" | "bank_csv" | "manual";
+  source: "receipt" | "bank_csv" | "manual" | "bank_statement";
   extractionMethod: "textract" | "csv_parser";
   fields: ExtractedField[];
   lineItems: ExtractedLineItem[];
@@ -47,7 +48,7 @@ export type TransactionUpsertedEvent = {
     currency: string;
     date: string;
     category?: string;
-    source: "receipt" | "bank_csv" | "manual";
+    source: "receipt" | "bank_csv" | "manual" | "bank_statement";
     uploadFileId?: string;
     extractedDocumentId?: string;
   };
