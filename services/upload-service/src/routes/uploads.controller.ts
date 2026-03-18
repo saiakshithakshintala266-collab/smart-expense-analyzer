@@ -8,7 +8,8 @@ import {
   HttpCode,
   Param,
   Post,
-  Query
+  Query,
+  Req
 } from "@nestjs/common";
 import { ApiHeader, ApiTags } from "@nestjs/swagger";
 import { CORRELATION_HEADER } from "@shared/observability";
@@ -23,6 +24,10 @@ import { CreateUploadRequestDto, FinalizeUploadRequestDto } from "./uploads.dto"
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
+  private getActorUserId(req: any): string {
+    return req?.user?.id ?? "dev-user";
+  }
+
   @Post()
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
@@ -30,11 +35,12 @@ export class UploadsController {
     @Param("workspaceId") workspaceId: string,
     @Headers(CORRELATION_HEADER) correlationId: string | undefined,
     @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined,
-    @Body() body: CreateUploadRequestDto
+    @Body() body: CreateUploadRequestDto,
+    @Req() req: any
   ) {
     return this.uploads.createUpload({
       workspaceId,
-      actorUserId: "dev-user",
+      actorUserId: this.getActorUserId(req),
       correlationId: correlationId ?? "",
       idempotencyKey: idempotencyKey ?? undefined,
       request: body
@@ -50,12 +56,13 @@ export class UploadsController {
     @Param("uploadFileId") uploadFileId: string,
     @Headers(CORRELATION_HEADER) correlationId: string | undefined,
     @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined,
-    @Body() body: FinalizeUploadRequestDto
+    @Body() body: FinalizeUploadRequestDto,
+    @Req() req: any
   ) {
     return this.uploads.finalizeUpload({
       workspaceId,
       uploadFileId,
-      actorUserId: "dev-user",
+      actorUserId: this.getActorUserId(req),
       correlationId: correlationId ?? "",
       idempotencyKey: idempotencyKey ?? undefined,
       request: body
@@ -85,8 +92,13 @@ export class UploadsController {
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   remove(
     @Param("workspaceId") workspaceId: string,
-    @Param("uploadFileId") uploadFileId: string
+    @Param("uploadFileId") uploadFileId: string,
+    @Req() req: any
   ) {
-    this.uploads.deleteUpload({ workspaceId, uploadFileId, actorUserId: "dev-user" });
+    this.uploads.deleteUpload({
+      workspaceId,
+      uploadFileId,
+      actorUserId: this.getActorUserId(req)
+    });
   }
 }
