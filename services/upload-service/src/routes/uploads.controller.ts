@@ -9,35 +9,38 @@ import {
   Param,
   Post,
   Query,
-  UseGuards
+  Req
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiTags } from "@nestjs/swagger";
 import { CORRELATION_HEADER } from "@shared/observability";
 import { IDEMPOTENCY_HEADER } from "@shared/idempotency";
 import { UploadsService } from "../domain/uploads.service";
 import { CreateUploadRequestDto, FinalizeUploadRequestDto } from "./uploads.dto";
-import { DebugRoleGuard } from "../auth/debug-role.guard";
 
-@ApiTags("Uploads")
-@ApiBearerAuth()
+// NOTE: This controller is intentionally unauthenticated and intended for dev-only usage.
+// Do not expose these endpoints in production without adding proper auth guards.
+@ApiTags("Uploads (dev-only, no auth)")
 @Controller("/workspaces/:workspaceId/uploads")
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
+  private getActorUserId(req: any): string {
+    return req?.user?.id ?? "dev-user";
+  }
+
   @Post()
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   createUpload(
     @Param("workspaceId") workspaceId: string,
     @Headers(CORRELATION_HEADER) correlationId: string | undefined,
     @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined,
-    @Body() body: CreateUploadRequestDto
+    @Body() body: CreateUploadRequestDto,
+    @Req() req: any
   ) {
     return this.uploads.createUpload({
       workspaceId,
-      actorUserId: "dev-user",
+      actorUserId: this.getActorUserId(req),
       correlationId: correlationId ?? "",
       idempotencyKey: idempotencyKey ?? undefined,
       request: body
@@ -46,8 +49,6 @@ export class UploadsController {
 
   @Post("/:uploadFileId/finalize")
   @HttpCode(200) // FIX: POST defaults to 201; finalize returns existing resource state, not a new resource
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   finalize(
@@ -55,12 +56,13 @@ export class UploadsController {
     @Param("uploadFileId") uploadFileId: string,
     @Headers(CORRELATION_HEADER) correlationId: string | undefined,
     @Headers(IDEMPOTENCY_HEADER) idempotencyKey: string | undefined,
-    @Body() body: FinalizeUploadRequestDto
+    @Body() body: FinalizeUploadRequestDto,
+    @Req() req: any
   ) {
     return this.uploads.finalizeUpload({
       workspaceId,
       uploadFileId,
-      actorUserId: "dev-user",
+      actorUserId: this.getActorUserId(req),
       correlationId: correlationId ?? "",
       idempotencyKey: idempotencyKey ?? undefined,
       request: body
@@ -87,13 +89,16 @@ export class UploadsController {
   }
 
   @Delete("/:uploadFileId")
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   remove(
     @Param("workspaceId") workspaceId: string,
-    @Param("uploadFileId") uploadFileId: string
+    @Param("uploadFileId") uploadFileId: string,
+    @Req() req: any
   ) {
-    this.uploads.deleteUpload({ workspaceId, uploadFileId, actorUserId: "dev-user" });
+    this.uploads.deleteUpload({
+      workspaceId,
+      uploadFileId,
+      actorUserId: this.getActorUserId(req)
+    });
   }
 }

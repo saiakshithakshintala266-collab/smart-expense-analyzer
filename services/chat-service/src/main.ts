@@ -19,7 +19,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Correlation-Id", "X-Debug-Role"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Correlation-Id"],
     credentials: false
   });
 

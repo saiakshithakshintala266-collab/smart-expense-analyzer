@@ -1,5 +1,3 @@
-export type Role = "admin" | "member" | "viewer";
-
 export interface UploadFile {
   id: string;
   workspaceId: string;
@@ -84,6 +82,5 @@ export interface SessionData {
   email: string;
   name: string;
   workspaceId: string;
-  role: string;
   expiresAt: string;
 }

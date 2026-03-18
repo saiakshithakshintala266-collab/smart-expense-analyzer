@@ -6,7 +6,6 @@ export interface SessionRecord {
   sessionToken: string;
   userId: string;
   workspaceId: string;
-  role: string;
   email: string;
   name: string;
   expiresAt: string;

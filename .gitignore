@@ -14,3 +14,10 @@ apps/web/.next/**
 
 # local docker scratch folders (if accidentally created)
 /docker/
+
+# LocalStack state
+tools/docker/localstack-data/
+
+# Compiled shared lib artifacts
+shared/libs/**/src/*.js
+shared/libs/**/src/*.js.map

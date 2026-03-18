@@ -6,7 +6,6 @@ export interface SessionData {
   email: string;
   name: string;
   workspaceId: string;
-  role: string;
   expiresAt: string;
 }
 
@@ -36,10 +35,6 @@ export function clearSession(): void {
 
 export function getToken(): string | null {
   return getSession()?.sessionToken ?? null;
-}
-
-export function getRole(): string {
-  return getSession()?.role ?? "viewer";
 }
 
 export function getWorkspaceId(): string {
