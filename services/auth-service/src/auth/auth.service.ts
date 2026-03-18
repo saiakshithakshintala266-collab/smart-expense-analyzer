@@ -5,6 +5,15 @@ import { UsersRepo } from '../db/users.repo';
 import { WorkspacesRepo } from '../db/workspaces.repo';
 import { SessionsRepo } from '../db/sessions.repo';
 
+interface SessionDto {
+  sessionToken: string;
+  userId: string;
+  email: string;
+  name: string;
+  workspaceId: string;
+  expiresAt: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -83,7 +92,7 @@ export class AuthService {
     email: string;
     name: string;
     workspaceId: string;
-  }) {
+  }): Promise<SessionDto> {
     const sessionToken = uuidv4();
     const ttlDays = parseInt(process.env.SESSION_TTL_DAYS ?? '30');
     const expiresAt = new Date(Date.now() + ttlDays * 86400000).toISOString();
