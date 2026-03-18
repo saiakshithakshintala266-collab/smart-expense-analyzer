@@ -14,3 +14,4 @@ apps/web/.next/**
 
 # local docker scratch folders (if accidentally created)
 /docker/
+apps/web/tsconfig.tsbuildinfo
