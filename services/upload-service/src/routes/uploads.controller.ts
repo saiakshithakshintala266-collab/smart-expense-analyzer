@@ -10,14 +10,15 @@ import {
   Post,
   Query
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiTags } from "@nestjs/swagger";
 import { CORRELATION_HEADER } from "@shared/observability";
 import { IDEMPOTENCY_HEADER } from "@shared/idempotency";
 import { UploadsService } from "../domain/uploads.service";
 import { CreateUploadRequestDto, FinalizeUploadRequestDto } from "./uploads.dto";
 
-@ApiTags("Uploads")
-@ApiBearerAuth()
+// NOTE: This controller is intentionally unauthenticated and intended for dev-only usage.
+// Do not expose these endpoints in production without adding proper auth guards.
+@ApiTags("Uploads (dev-only, no auth)")
 @Controller("/workspaces/:workspaceId/uploads")
 export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
