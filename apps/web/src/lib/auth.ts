@@ -6,7 +6,6 @@ export interface SessionData {
   email: string;
   name: string;
   workspaceId: string;
-  role: string;
   expiresAt: string;
 }
 
