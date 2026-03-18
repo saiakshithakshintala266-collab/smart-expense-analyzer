@@ -35,11 +35,10 @@ export class AuthService {
       passwordHash,
       name,
       workspaceId,
-      role: 'admin',
       createdAt: now,
     });
 
-    return this.createSession({ userId, email, name, workspaceId, role: 'admin' });
+    return this.createSession({ userId, email, name, workspaceId });
   }
 
   async login(email: string, password: string) {
@@ -61,7 +60,6 @@ export class AuthService {
     email: user.email,
     name: user.name,
     workspaceId: user.workspaceId,
-    role: user.role,
   });
 }
 
@@ -77,7 +75,6 @@ export class AuthService {
       email: session.email,
       name: session.name,
       workspaceId: session.workspaceId,
-      role: session.role,
     };
   }
 
@@ -86,7 +83,6 @@ export class AuthService {
     email: string;
     name: string;
     workspaceId: string;
-    role: string;
   }) {
     const sessionToken = uuidv4();
     const ttlDays = parseInt(process.env.SESSION_TTL_DAYS ?? '30');
@@ -106,7 +102,6 @@ export class AuthService {
       email: data.email,
       name: data.name,
       workspaceId: data.workspaceId,
-      role: data.role,
       expiresAt,
     };
   }

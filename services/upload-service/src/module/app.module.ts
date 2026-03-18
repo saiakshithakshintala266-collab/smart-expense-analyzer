@@ -3,10 +3,9 @@ import { Module } from "@nestjs/common";
 import { UploadsController } from "../routes/uploads.controller";
 import { UploadsService } from "../domain/uploads.service";
 import { HealthController } from "../routes/health.controller";
-import { DebugRoleGuard } from "../auth/debug-role.guard";
 
 @Module({
   controllers: [HealthController, UploadsController],
-  providers: [UploadsService, DebugRoleGuard]
+  providers: [UploadsService]
 })
 export class AppModule {}

@@ -1,5 +1,3 @@
-export type Role = "admin" | "member" | "viewer";
-
 export interface UploadFile {
   id: string;
   workspaceId: string;

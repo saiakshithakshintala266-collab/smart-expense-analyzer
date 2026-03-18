@@ -38,10 +38,6 @@ export function getToken(): string | null {
   return getSession()?.sessionToken ?? null;
 }
 
-export function getRole(): string {
-  return getSession()?.role ?? "viewer";
-}
-
 export function getWorkspaceId(): string {
   return getSession()?.workspaceId ?? "ws-default";
 }

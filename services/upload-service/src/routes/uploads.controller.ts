@@ -8,15 +8,13 @@ import {
   HttpCode,
   Param,
   Post,
-  Query,
-  UseGuards
+  Query
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { CORRELATION_HEADER } from "@shared/observability";
 import { IDEMPOTENCY_HEADER } from "@shared/idempotency";
 import { UploadsService } from "../domain/uploads.service";
 import { CreateUploadRequestDto, FinalizeUploadRequestDto } from "./uploads.dto";
-import { DebugRoleGuard } from "../auth/debug-role.guard";
 
 @ApiTags("Uploads")
 @ApiBearerAuth()
@@ -25,8 +23,6 @@ export class UploadsController {
   constructor(private readonly uploads: UploadsService) {}
 
   @Post()
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   createUpload(
@@ -46,8 +42,6 @@ export class UploadsController {
 
   @Post("/:uploadFileId/finalize")
   @HttpCode(200) // FIX: POST defaults to 201; finalize returns existing resource state, not a new resource
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "Idempotency-Key", required: false })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   finalize(
@@ -87,8 +81,6 @@ export class UploadsController {
   }
 
   @Delete("/:uploadFileId")
-  @UseGuards(DebugRoleGuard)
-  @ApiHeader({ name: "X-Debug-Role", required: false, description: "dev-only: admin|member|viewer" })
   @ApiHeader({ name: "X-Correlation-Id", required: false })
   remove(
     @Param("workspaceId") workspaceId: string,
