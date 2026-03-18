@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { getToken, getRole } from "./auth";
+import { getToken } from "./auth";
 
 function createClient(baseURL: string): AxiosInstance {
   const client = axios.create({
@@ -13,7 +13,6 @@ function createClient(baseURL: string): AxiosInstance {
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    config.headers["X-Debug-Role"] = getRole();
     return config;
   });
 

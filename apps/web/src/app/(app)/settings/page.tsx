@@ -52,15 +52,6 @@ export default function SettingsPage() {
               className="input bg-secondary/50 cursor-not-allowed"
             />
           </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">Role</label>
-            <input
-              type="text"
-              defaultValue={session?.role ?? ""}
-              readOnly
-              className="input bg-secondary/50 cursor-not-allowed capitalize"
-            />
-          </div>
         </div>
       </div>
 

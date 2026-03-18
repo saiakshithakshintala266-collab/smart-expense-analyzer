@@ -4,18 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
 import { saveSession } from "@/lib/auth";
-import type { Role } from "@/types";
-
-const ROLES: { role: Role; label: string; desc: string }[] = [
-  { role: "admin",  label: "Admin",  desc: "Full access" },
-  { role: "member", label: "Member", desc: "Read + write" },
-  { role: "viewer", label: "Viewer", desc: "Read only" },
-];
 
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [selectedRole, setSelectedRole] = useState<Role>("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -103,29 +95,6 @@ export default function LoginPage() {
               className="input"
             />
           </div>
-
-          {/* Role picker — login only */}
-          {mode === "login" && (
-            <div className="mb-5">
-              <label className="block text-xs text-muted-foreground mb-2">Sign in as</label>
-              <div className="grid grid-cols-3 gap-2">
-                {ROLES.map(({ role, label, desc }) => (
-                  <button
-                    key={role}
-                    onClick={() => setSelectedRole(role)}
-                    className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
-                      selectedRole === role
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <div className="text-xs font-medium">{label}</div>
-                    <div className="text-xs opacity-60 mt-0.5">{desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Error */}
           {error && (
