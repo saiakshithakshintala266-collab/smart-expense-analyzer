@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/dist
+**/.env*
+**/localstack-data
+**/*.log
+.git
+.claude
+apps/
+tests/
+docs/
+infra/
