@@ -13,6 +13,7 @@ export type ExtractedLineItem = {
   quantity?: number;
   unitPrice?: number;
   totalPrice?: number;
+  date?: string;
   confidence?: number;
 };
 
@@ -46,20 +47,9 @@ export type TransactionUpsertedEvent = {
     amount: number;
     currency: string;
     date: string;
-    category?: string;
     source: "receipt" | "bank_csv" | "manual";
     uploadFileId?: string;
     extractedDocumentId?: string;
   };
 };
 
-export type TransactionCategoryOverriddenEvent = {
-  type: "transaction.category.overridden.v1";
-  occurredAt: string;
-  correlationId: string;
-  workspaceId: string;
-  transactionId: string;
-  previousCategory?: string;
-  newCategory: string;
-  overriddenByUserId: string;
-};

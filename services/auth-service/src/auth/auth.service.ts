@@ -42,26 +42,26 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    let user: any = null;
-  try {
-    user = await this.users.findByEmail(email);
-  } catch (err) {
-    console.error('findByEmail error:', err);
-    throw new UnauthorizedException('Invalid email or password');
+    let user: Awaited<ReturnType<typeof this.users.findByEmail>> = null;
+    try {
+      user = await this.users.findByEmail(email);
+    } catch (err) {
+      console.error('findByEmail error:', err);
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user) throw new UnauthorizedException('Invalid email or password');
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) throw new UnauthorizedException('Invalid email or password');
+
+    return this.createSession({
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      workspaceId: user.workspaceId,
+    });
   }
-  
-  if (!user) throw new UnauthorizedException('Invalid email or password');
-
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new UnauthorizedException('Invalid email or password');
-
-  return this.createSession({
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    workspaceId: user.workspaceId,
-  });
-}
 
   async logout(token: string) {
     await this.sessions.delete(token);

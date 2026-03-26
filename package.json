@@ -10,9 +10,11 @@
     "test:contract": "jest --config tests/contract/jest.config.ts",
     "test:integration": "jest --config tests/integration/jest.config.ts",
     "test:coverage": "jest --config jest.config.ts --coverage",
-    "dev:services": "concurrently --names \"upload,extraction,transactions,categorization,analytics,anomaly,notification,chat,auth\" --prefix-colors \"cyan,green,yellow,magenta,blue,red,white,gray,greenBright\" \"pnpm --filter @services/upload-service dev\" \"pnpm --filter @services/extraction-service dev\" \"pnpm --filter @services/transactions-service dev\" \"pnpm --filter @services/categorization-service dev\" \"pnpm --filter @services/analytics-service dev\" \"pnpm --filter @services/anomaly-service dev\" \"pnpm --filter @services/notification-service dev\" \"pnpm --filter @services/chat-service dev\" \"pnpm --filter @services/auth-service dev\"",
+    "dev:services": "concurrently --names \"upload,extraction,transactions,analytics,anomaly,notification,chat,auth\" --prefix-colors \"cyan,green,yellow,blue,red,white,gray,greenBright\" \"pnpm --filter @services/upload-service dev\" \"pnpm --filter @services/extraction-service dev\" \"pnpm --filter @services/transactions-service dev\" \"pnpm --filter @services/analytics-service dev\" \"pnpm --filter @services/anomaly-service dev\" \"pnpm --filter @services/notification-service dev\" \"pnpm --filter @services/chat-service dev\" \"pnpm --filter @services/auth-service dev\"",
     "dev:web": "pnpm --filter @apps/web dev",
-    "dev:all": "concurrently --names \"services,web\" \"pnpm dev:services\" \"pnpm dev:web\""
+    "dev:all": "concurrently --names \"services,web\" \"pnpm dev:services\" \"pnpm dev:web\"",
+    "localstack:start": "cd tools/docker && docker-compose up -d",
+    "localstack:init": "cd tools/docker && docker-compose up -d"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

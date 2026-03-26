@@ -21,9 +21,6 @@ export type TransactionRecord = {
   amount: number;
   currency: string;
   date: string;
-  category?: string;
-  categoryOverriddenByUserId?: string;
-  categoryOverriddenAt?: string;
   merchantOverride?: string;
   notes?: string;
   extractionConfidence?: number;
@@ -75,7 +72,6 @@ export class TransactionsRepo {
       limit?: number;
       dateFrom?: string;
       dateTo?: string;
-      category?: string;
       source?: TransactionSource;
       status?: TransactionStatus;
       nextPageToken?: string;
@@ -104,7 +100,6 @@ export class TransactionsRepo {
     // In-memory filters
     if (opts.dateFrom) items = items.filter((r) => r.date >= opts.dateFrom!);
     if (opts.dateTo) items = items.filter((r) => r.date <= opts.dateTo!);
-    if (opts.category) items = items.filter((r) => r.category === opts.category);
     if (opts.source) items = items.filter((r) => r.source === opts.source);
     const statusFilter = opts.status ?? "ACTIVE";
     items = items.filter((r) => r.status === statusFilter);
@@ -122,9 +117,6 @@ export class TransactionsRepo {
     patch: {
       merchantOverride?: string;
       notes?: string;
-      category?: string;
-      categoryOverriddenByUserId?: string;
-      categoryOverriddenAt?: string;
     }
   ): Promise<void> {
     const sets: string[] = ["updatedAt = :u"];
@@ -139,19 +131,6 @@ export class TransactionsRepo {
       sets.push("#notes = :n");
       names["#notes"] = "notes";
       values[":n"] = patch.notes;
-    }
-    if (patch.category !== undefined) {
-      sets.push("#cat = :c");
-      names["#cat"] = "category";
-      values[":c"] = patch.category;
-    }
-    if (patch.categoryOverriddenByUserId !== undefined) {
-      sets.push("categoryOverriddenByUserId = :cou");
-      values[":cou"] = patch.categoryOverriddenByUserId;
-    }
-    if (patch.categoryOverriddenAt !== undefined) {
-      sets.push("categoryOverriddenAt = :coa");
-      values[":coa"] = patch.categoryOverriddenAt;
     }
 
     await this.ddb.send(
@@ -175,6 +154,18 @@ export class TransactionsRepo {
         ExpressionAttributeValues: marshall({ ":s": "DELETED", ":u": new Date().toISOString() })
       })
     );
+  }
+
+  async listByUploadFileId(workspaceId: string, uploadFileId: string): Promise<TransactionRecord[]> {
+    const res = await this.ddb.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "PK = :pk",
+        ExpressionAttributeValues: marshall({ ":pk": pk(workspaceId) })
+      })
+    );
+    const items = (res.Items ?? []).map((i) => stripKeys(unmarshall(i) as DbItem));
+    return items.filter((r) => r.uploadFileId === uploadFileId && r.status === "ACTIVE");
   }
 
   async getByExtractedDocumentId(

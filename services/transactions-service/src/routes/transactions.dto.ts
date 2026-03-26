@@ -14,9 +14,6 @@ export class CreateTransactionDto {
   @ApiProperty({ example: "2024-03-15", description: "ISO 8601 date YYYY-MM-DD" })
   date!: string;
 
-  @ApiProperty({ required: false, example: "Groceries" })
-  category?: string;
-
   @ApiProperty({ required: false })
   notes?: string;
 }
@@ -24,9 +21,6 @@ export class CreateTransactionDto {
 export class CorrectTransactionDto {
   @ApiProperty({ required: false, example: "Whole Foods" })
   merchantOverride?: string;
-
-  @ApiProperty({ required: false, example: "Groceries" })
-  category?: string;
 
   @ApiProperty({ required: false })
   notes?: string;

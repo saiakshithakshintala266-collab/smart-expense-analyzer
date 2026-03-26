@@ -8,7 +8,7 @@ export const EXPENSE_TOOLS = [
   {
     name: "get_monthly_summary",
     description:
-      "Get total spend, transaction count, category breakdown, source breakdown and top merchants for a given month. Use this for questions about total spend, monthly breakdowns, or category spending in a specific month.",
+      "Get total spend, transaction count, source breakdown and top merchants for a given month. Use this for questions about total spend or monthly breakdowns in a specific month.",
     inputSchema: {
       json: {
         type: "object",

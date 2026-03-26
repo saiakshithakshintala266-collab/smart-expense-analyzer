@@ -17,6 +17,14 @@ export function normalizeExtraction(
   if (event.source === "bank_csv") {
     return normalizeCsvRows(event, idGenerator, now);
   }
+
+  // Bank statement PDFs arrive with source="receipt" but produce multiple line items.
+  // If there are line items with prices, create one transaction per line item.
+  const hasLineItems = event.lineItems.some(li => li.totalPrice !== undefined && li.totalPrice > 0);
+  if (hasLineItems) {
+    return normalizeCsvRows(event, idGenerator, now);
+  }
+
   return [normalizeReceiptOrImage(event, idGenerator, now)];
 }
 
@@ -100,7 +108,7 @@ function normalizeCsvRows(
       merchant: item.description?.trim() || "Unknown Merchant",
       amount: item.totalPrice ?? 0,
       currency,
-      date: now.slice(0, 10),
+      date: item.date ?? now.slice(0, 10),
       extractionConfidence: item.confidence,
       status: "ACTIVE" as const,
       createdAt: now,

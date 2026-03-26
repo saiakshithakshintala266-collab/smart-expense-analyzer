@@ -15,6 +15,7 @@ import {
 } from "../integrations/textract.extractor";
 import { parseCSV } from "../integrations/csv.parser";
 import { createSnsClient, publishEvent, mustGetEventsTopicArn } from "../integrations/sns.publisher";
+import { createBedrockClient, enrichWithClaude } from "../integrations/bedrock.enricher";
 
 import {
   UploadUploadedEvent,
@@ -33,6 +34,7 @@ export class ExtractionService {
 
   private readonly textract = createTextractClient();
   private readonly s3 = createS3ClientForTextract();
+  private readonly bedrock = createBedrockClient();
   private readonly sns = createSnsClient();
   private readonly eventsTopicArn = mustGetEventsTopicArn();
 
@@ -124,14 +126,31 @@ export class ExtractionService {
       textract: this.textract,
       bucket: event.storageBucket,
       key: event.storageKey,
-      contentType: event.contentType
+      contentType: event.contentType,
+      source: event.source
     });
 
-    // Update DDB with results
+    // Enrich raw Textract output with Claude Haiku for normalised merchant/date/amount/category
+    const enriched = await enrichWithClaude({
+      bedrock: this.bedrock,
+      rawFields: result.fields,
+      rawLineItems: result.lineItems,
+      source: event.source
+    });
+
+    // Merge enriched fields alongside raw Textract fields using "enriched_" prefix
+    const enrichedFields = [
+      ...(enriched.merchant  ? [{ key: "enriched_merchant",  value: enriched.merchant,               confidence: enriched.confidence }] : []),
+      ...(enriched.date      ? [{ key: "enriched_date",      value: enriched.date,                    confidence: enriched.confidence }] : []),
+      ...(enriched.amount != null ? [{ key: "enriched_amount", value: String(enriched.amount),         confidence: enriched.confidence }] : []),
+      ...(enriched.currency  ? [{ key: "enriched_currency",  value: enriched.currency,               confidence: enriched.confidence }] : []),
+      ...(enriched.category  ? [{ key: "enriched_category",  value: enriched.category,               confidence: enriched.confidence }] : [])
+    ];
+
     const updatedRecord: ExtractedDocRecord = {
       ...record,
       status: "COMPLETED",
-      fields: result.fields,
+      fields: [...result.fields, ...enrichedFields],
       lineItems: result.lineItems,
       warnings: result.warnings,
       updatedAt: new Date().toISOString()

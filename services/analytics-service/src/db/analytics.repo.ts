@@ -6,10 +6,6 @@
  *   PK = WS#<workspaceId>   SK = MONTHLY#<YYYY-MM>
  *   Fields: totalAmount, transactionCount, currency
  *
- * ── Category breakdown (per month) ───────────────────────────────────────────
- *   PK = WS#<workspaceId>   SK = CAT#<YYYY-MM>#<category>
- *   Fields: totalAmount, transactionCount, currency
- *
  * ── Source breakdown (per month) ─────────────────────────────────────────────
  *   PK = WS#<workspaceId>   SK = SRC#<YYYY-MM>#<source>
  *   Fields: totalAmount, transactionCount, currency
@@ -32,14 +28,6 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
 export type MonthlySummary = {
   yearMonth: string;          // YYYY-MM
-  totalAmount: number;
-  transactionCount: number;
-  currency: string;
-};
-
-export type CategoryBreakdown = {
-  yearMonth: string;
-  category: string;
   totalAmount: number;
   transactionCount: number;
   currency: string;
@@ -94,23 +82,6 @@ export class AnalyticsRepo {
     await this.increment(
       pk(workspaceId),
       `MONTHLY#${yearMonth}`,
-      amount,
-      currency,
-      countDelta
-    );
-  }
-
-  async incrementCategory(
-    workspaceId: string,
-    yearMonth: string,
-    category: string,
-    amount: number,
-    currency: string,
-    countDelta: number
-  ): Promise<void> {
-    await this.increment(
-      pk(workspaceId),
-      `CAT#${yearMonth}#${category}`,
       amount,
       currency,
       countDelta
@@ -191,28 +162,6 @@ export class AnalyticsRepo {
       transactionCount: Number(item.transactionCount ?? 0),
       currency: (item.currency as string) ?? "USD"
     }));
-  }
-
-  async getCategoryBreakdown(
-    workspaceId: string,
-    yearMonth: string
-  ): Promise<CategoryBreakdown[]> {
-    const items = await this.queryRange(
-      workspaceId,
-      `CAT#${yearMonth}#`,
-      `CAT#${yearMonth}\xFF`
-    );
-
-    return items.map((item) => {
-      const parts = (item.SK as string).split("#");
-      return {
-        yearMonth,
-        category: parts.slice(2).join("#"),
-        totalAmount: Number(item.totalAmount ?? 0),
-        transactionCount: Number(item.transactionCount ?? 0),
-        currency: (item.currency as string) ?? "USD"
-      };
-    });
   }
 
   async getSourceBreakdown(

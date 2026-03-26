@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
-export type UploadStatus = "QUEUED" | "UPLOADED" | "PROCESSING" | "COMPLETED" | "FAILED";
+export type UploadStatus = "QUEUED" | "UPLOADED" | "PROCESSING" | "COMPLETED" | "FAILED" | "DELETED";
 export type UploadSource = "receipt" | "bank_csv" | "manual";
 
 export type UploadFileRecord = {

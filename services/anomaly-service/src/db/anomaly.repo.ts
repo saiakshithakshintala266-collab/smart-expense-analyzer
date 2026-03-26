@@ -71,6 +71,26 @@ export class AnomalyRepo {
     );
   }
 
+  async dismissAnomaliesByTransactionId(workspaceId: string, transactionId: string): Promise<void> {
+    // Fetch all anomalies for the workspace, filter by transactionId, mark each DISMISSED
+    const all = await this.listAnomalies(workspaceId);
+    const matching = all.filter((a) => a.transactionId === transactionId && a.status === "OPEN");
+
+    await Promise.all(
+      matching.map((a) =>
+        this.ddb.send(
+          new UpdateItemCommand({
+            TableName: this.tableName,
+            Key: marshall({ PK: pk(workspaceId), SK: `ANOMALY#${a.createdAt}#${a.anomalyId}` }),
+            UpdateExpression: "SET #s = :s",
+            ExpressionAttributeNames: { "#s": "status" },
+            ExpressionAttributeValues: marshall({ ":s": "DISMISSED" })
+          })
+        )
+      )
+    );
+  }
+
   async listAnomalies(
     workspaceId: string,
     opts: { limit?: number; status?: "OPEN" | "DISMISSED" } = {}

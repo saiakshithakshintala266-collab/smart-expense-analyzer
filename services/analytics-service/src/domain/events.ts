@@ -14,7 +14,6 @@ export type TransactionUpsertedEvent = {
     amount: number;
     currency: string;
     date: string;           // YYYY-MM-DD
-    category?: string;
     source: "receipt" | "bank_csv" | "manual";
     uploadFileId?: string;
     extractedDocumentId?: string;

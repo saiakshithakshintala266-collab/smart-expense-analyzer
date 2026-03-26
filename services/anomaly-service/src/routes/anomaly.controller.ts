@@ -11,10 +11,20 @@ export class AnomalyController {
 
   @Get()
   @ApiQuery({ name: "status", required: false, enum: ["OPEN", "DISMISSED"] })
-  list(
+  async list(
     @Param("workspaceId") workspaceId: string,
     @Query("status") status?: "OPEN" | "DISMISSED"
   ) {
-    return this.anomalyService.listAnomalies(workspaceId, status);
+    const records = await this.anomalyService.listAnomalies(workspaceId, status);
+    return records.map((r) => ({
+      id:            r.anomalyId,
+      workspaceId:   r.workspaceId,
+      transactionId: r.transactionId,
+      type:          r.anomalyType,
+      severity:      r.severity.toLowerCase(),
+      description:   r.description,
+      acknowledged:  r.status === "DISMISSED",
+      createdAt:     r.createdAt,
+    }));
   }
 }

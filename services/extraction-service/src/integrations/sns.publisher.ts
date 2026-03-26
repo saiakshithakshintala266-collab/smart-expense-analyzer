@@ -13,11 +13,10 @@ function mustGetEnv(name: string): string {
 }
 
 export function createSnsClient(): SNSClient {
-  const endpoint = process.env.AWS_ENDPOINT_URL;
+  const endpoint = process.env.SNS_ENDPOINT_URL;
   return new SNSClient({
     region: process.env.AWS_REGION ?? "us-east-1",
-    endpoint,
-    credentials: { accessKeyId: "test", secretAccessKey: "test" }
+    ...(endpoint ? { endpoint } : {}),
   });
 }
 

@@ -81,11 +81,12 @@ export class UploadsController {
   }
 
   @Delete("/:uploadFileId")
+  @HttpCode(204)
   @ApiHeader({ name: "X-Correlation-Id", required: false })
-  remove(
+  async remove(
     @Param("workspaceId") workspaceId: string,
     @Param("uploadFileId") uploadFileId: string
   ) {
-    this.uploads.deleteUpload({ workspaceId, uploadFileId, actorUserId: "dev-user" });
+    await this.uploads.deleteUpload({ workspaceId, uploadFileId, actorUserId: "dev-user" });
   }
 }

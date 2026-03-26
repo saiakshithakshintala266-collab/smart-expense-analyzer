@@ -18,11 +18,11 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnApplication
   private running = false;
 
   constructor(private readonly extractionService: ExtractionService) {
-    const endpoint = process.env.AWS_ENDPOINT_URL;
-    this.sqs = new SQSClient({
-      region: process.env.AWS_REGION ?? "us-east-1",
-      ...(endpoint ? { endpoint } : {})
-    });
+    const endpoint = process.env.SQS_ENDPOINT_URL;
+this.sqs = new SQSClient({
+  region: process.env.AWS_REGION ?? "us-east-1",
+  ...(endpoint ? { endpoint } : {})
+});
     this.queueUrl = mustGetEnv("SQS_EXTRACTION_QUEUE_URL");
   }
 

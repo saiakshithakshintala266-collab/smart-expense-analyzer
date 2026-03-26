@@ -36,7 +36,7 @@ export class AnalyticsService {
       return;
     }
 
-    const { amount, currency, date, category, source, merchant } = snapshot;
+    const { amount, currency, date, source, merchant } = snapshot;
 
     // Determine sign — DELETED reverses the aggregation
     const sign = operation === "DELETED" ? -1 : 1;
@@ -54,16 +54,6 @@ export class AnalyticsService {
     await Promise.all([
       // Monthly total
       this.repo.incrementMonthly(workspaceId, yearMonth, delta, currency, countDelta),
-
-      // Category breakdown (use "Uncategorized" if no category yet)
-      this.repo.incrementCategory(
-        workspaceId,
-        yearMonth,
-        category ?? "Uncategorized",
-        delta,
-        currency,
-        countDelta
-      ),
 
       // Source breakdown
       this.repo.incrementSource(workspaceId, yearMonth, source, delta, currency, countDelta),
@@ -84,9 +74,8 @@ export class AnalyticsService {
   // ── Query methods (called by HTTP routes) ─────────────────────────────────
 
   async getMonthlySummary(workspaceId: string, yearMonth: string) {
-    const [monthly, categories, sources, merchants] = await Promise.all([
+    const [monthly, sources, merchants] = await Promise.all([
       this.repo.getMonthlySummaries(workspaceId, yearMonth, yearMonth),
-      this.repo.getCategoryBreakdown(workspaceId, yearMonth),
       this.repo.getSourceBreakdown(workspaceId, yearMonth),
       this.repo.getMerchantSummaries(workspaceId, yearMonth, 10)
     ]);
@@ -98,7 +87,6 @@ export class AnalyticsService {
       totalAmount: summary.totalAmount,
       transactionCount: summary.transactionCount,
       currency: summary.currency,
-      byCategory: categories,
       bySource: sources,
       topMerchants: merchants
     };
