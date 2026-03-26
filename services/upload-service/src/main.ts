@@ -24,8 +24,7 @@ async function bootstrap(): Promise<void> {
       "Content-Type",
       "Authorization",
       "X-Correlation-Id",
-      "Idempotency-Key",
-      "X-Debug-Role"
+      "Idempotency-Key"
     ],
     credentials: false
   });

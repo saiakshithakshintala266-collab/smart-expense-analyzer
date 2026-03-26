@@ -4,14 +4,8 @@
     "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false,
-    "baseUrl": ".",
-    "paths": {
-      "@shared/testing":       ["../../shared/libs/testing/src/index.ts"],
-      "@shared/logger":        ["../../shared/libs/logger/src/index.ts"],
-      "@shared/observability": ["../../shared/libs/observability/src/index.ts"],
-      "@shared/idempotency":   ["../../shared/libs/idempotency/src/index.ts"]
-    }
+    "useDefineForClassFields": false
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/__tests__/**/*.ts"]
 }

@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { PutCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { createDdbClient } from './ddb.client';
 
 export interface SessionRecord {
   sessionToken: string;
   userId: string;
-  workspaceId: string;
-  role: string;
   email: string;
   name: string;
+  workspaceId: string;
   expiresAt: string;
   createdAt: string;
 }
@@ -35,10 +34,7 @@ export class SessionsRepo {
     }));
     if (!res.Item) return null;
     const session = res.Item as SessionRecord;
-    if (new Date(session.expiresAt) < new Date()) {
-      await this.delete(token);
-      return null;
-    }
+    if (new Date(session.expiresAt) < new Date()) return null;
     return session;
   }
 

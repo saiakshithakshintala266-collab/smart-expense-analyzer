@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { getToken, getRole } from "./auth";
+import { getToken } from "./auth";
 
 function createClient(baseURL: string): AxiosInstance {
   const client = axios.create({
@@ -13,7 +13,6 @@ function createClient(baseURL: string): AxiosInstance {
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    config.headers["X-Debug-Role"] = getRole();
     return config;
   });
 
@@ -100,7 +99,7 @@ export const uploadsApi = {
 // ── Transactions ──────────────────────────────────────────────────────────────
 
 export const transactionsApi = {
-  list: (params?: { dateFrom?: string; dateTo?: string; category?: string; nextPageToken?: string }) =>
+  list: (params?: { dateFrom?: string; dateTo?: string; nextPageToken?: string }) =>
     transactions.get(`/workspaces/${WS()}/transactions`, { params }).then((r) => r.data),
 
   get: (id: string) =>
@@ -111,6 +110,9 @@ export const transactionsApi = {
 
   delete: (id: string) =>
     transactions.delete(`/workspaces/${WS()}/transactions/${id}`).then((r) => r.data),
+
+  deleteByUpload: (uploadFileId: string) =>
+    transactions.delete(`/workspaces/${WS()}/transactions/by-upload/${uploadFileId}`).then((r) => r.data),
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
@@ -119,7 +121,7 @@ export const analyticsApi = {
   getSummary: (params?: { yearMonth?: string }) =>
     analytics.get(`/workspaces/${WS()}/analytics/summary`, { params }).then((r) => r.data),
 
-  getDaily: (params?: { dateFrom?: string; dateTo?: string }) =>
+  getDaily: (params?: { yearMonth?: string; dateFrom?: string; dateTo?: string }) =>
     analytics.get(`/workspaces/${WS()}/analytics/daily`, { params }).then((r) => r.data),
 
   getTrends: (params?: { months?: number }) =>
@@ -129,8 +131,8 @@ export const analyticsApi = {
 // ── Anomalies ─────────────────────────────────────────────────────────────────
 
 export const anomalyApi = {
-  list: (params?: { severity?: string; acknowledged?: boolean }) =>
-    anomaly.get(`/workspaces/${WS()}/anomalies`, { params }).then((r) => r.data),
+  list: (params?: { status?: "OPEN" | "DISMISSED" }) =>
+    anomaly.get(`/workspaces/${WS()}/anomalies`, { params: { status: "OPEN", ...params } }).then((r) => r.data),
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────

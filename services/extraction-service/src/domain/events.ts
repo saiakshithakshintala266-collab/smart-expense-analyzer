@@ -30,6 +30,7 @@ export type ExtractedLineItem = {
   quantity?: number;
   unitPrice?: number;
   totalPrice?: number;
+  date?: string;        // ISO YYYY-MM-DD — populated for bank statement rows
   confidence?: number;
 };
 

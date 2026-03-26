@@ -8,7 +8,6 @@ export interface UserRecord {
   passwordHash: string;
   name: string;
   workspaceId: string;
-  role: string;
   createdAt: string;
 }
 

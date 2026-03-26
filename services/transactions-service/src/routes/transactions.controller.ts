@@ -25,7 +25,6 @@ export class TransactionsController {
   @Get()
   @ApiQuery({ name: "dateFrom", required: false, example: "2024-01-01" })
   @ApiQuery({ name: "dateTo", required: false, example: "2024-12-31" })
-  @ApiQuery({ name: "category", required: false })
   @ApiQuery({ name: "source", required: false, enum: ["receipt", "bank_csv", "manual"] })
   @ApiQuery({ name: "limit", required: false })
   @ApiQuery({ name: "nextPageToken", required: false })
@@ -34,7 +33,6 @@ export class TransactionsController {
     @Param("workspaceId") workspaceId: string,
     @Query("dateFrom") dateFrom?: string,
     @Query("dateTo") dateTo?: string,
-    @Query("category") category?: string,
     @Query("source") source?: string,
     @Query("limit") limit?: string,
     @Query("nextPageToken") nextPageToken?: string
@@ -42,7 +40,6 @@ export class TransactionsController {
     return this.transactions.listTransactions(workspaceId, {
       dateFrom,
       dateTo,
-      category,
       source: source as any,
       limit: limit ? parseInt(limit, 10) : undefined,
       nextPageToken
@@ -79,6 +76,18 @@ export class TransactionsController {
     return this.transactions.correctTransaction(
       workspaceId, transactionId, "dev-user", correlationId ?? "", body
     );
+  }
+
+  @Delete("/by-upload/:uploadFileId")
+  @HttpCode(200)
+  @ApiHeader({ name: "X-Correlation-Id", required: false })
+  async removeByUpload(
+    @Param("workspaceId") workspaceId: string,
+    @Param("uploadFileId") uploadFileId: string,
+    @Headers(CORRELATION_HEADER) correlationId: string | undefined
+  ) {
+    const deleted = await this.transactions.deleteByUploadFileId(workspaceId, uploadFileId, correlationId ?? "");
+    return { deleted };
   }
 
   @Delete("/:transactionId")

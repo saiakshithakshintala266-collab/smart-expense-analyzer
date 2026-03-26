@@ -187,6 +187,7 @@ export class UploadsService {
     const res = await this.repo.listByWorkspace(input.workspaceId, 50);
 
     const items = res.items.filter((r) => {
+      if (r.status === "DELETED") return false;
       if (input.status && r.status !== input.status) return false;
       if (input.source && r.source !== input.source) return false;
       return true;
@@ -199,12 +200,11 @@ export class UploadsService {
     const existing = await this.repo.get(input.workspaceId, input.uploadFileId);
     if (!existing) throw new NotFoundException("UploadFile not found");
 
-    // TODO: implement real delete (S3 object removal + DDB hard delete) in a later iteration
-    await this.repo.updateStatus(input.workspaceId, input.uploadFileId, "FAILED");
+    await this.repo.updateStatus(input.workspaceId, input.uploadFileId, "DELETED");
 
-    this.log.warn(
+    this.log.info(
       { workspaceId: input.workspaceId, uploadFileId: input.uploadFileId, actorUserId: input.actorUserId },
-      "upload marked FAILED (soft delete placeholder)"
+      "upload marked DELETED"
     );
   }
 }

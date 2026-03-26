@@ -11,8 +11,7 @@ import { createSnsClient, publishEvent, mustGetEventsTopicArn } from "../integra
 
 import {
   ExtractionCompletedEvent,
-  TransactionUpsertedEvent,
-  TransactionCategoryOverriddenEvent
+  TransactionUpsertedEvent
 } from "./events";
 import { normalizeExtraction } from "./normalizer";
 
@@ -76,7 +75,6 @@ export class TransactionsService {
     opts: {
       dateFrom?: string;
       dateTo?: string;
-      category?: string;
       source?: TransactionSource;
       limit?: number;
       nextPageToken?: string;
@@ -90,39 +88,38 @@ export class TransactionsService {
     transactionId: string,
     actorUserId: string,
     correlationId: string,
-    patch: { merchantOverride?: string; notes?: string; category?: string }
+    patch: { merchantOverride?: string; notes?: string }
   ): Promise<TransactionRecord> {
     const cid = getOrCreateCorrelationId(correlationId);
     const record = await this.repo.get(workspaceId, transactionId);
     if (!record || record.status === "DELETED") throw new NotFoundException("Transaction not found");
 
-    const isCategoryOverride = patch.category !== undefined && patch.category !== record.category;
-    const now = new Date().toISOString();
-
-    await this.repo.updateCorrections(workspaceId, transactionId, {
-      ...patch,
-      ...(isCategoryOverride
-        ? { categoryOverriddenByUserId: actorUserId, categoryOverriddenAt: now }
-        : {})
-    });
+    await this.repo.updateCorrections(workspaceId, transactionId, patch);
 
     const updated = await this.repo.get(workspaceId, transactionId);
     if (!updated) throw new NotFoundException("Transaction not found after update");
 
     await this.publishUpserted(updated, "UPDATED", cid);
 
-    if (isCategoryOverride) {
-      await this.publishCategoryOverridden({
-        record: updated,
-        previousCategory: record.category,
-        newCategory: patch.category!,
-        overriddenByUserId: actorUserId,
-        correlationId: cid
-      });
-    }
-
     this.log.info({ correlationId: cid, workspaceId, transactionId, patch }, "Transaction corrected");
     return updated;
+  }
+
+  async deleteByUploadFileId(
+    workspaceId: string,
+    uploadFileId: string,
+    correlationId: string
+  ): Promise<number> {
+    const cid = getOrCreateCorrelationId(correlationId);
+    const records = await this.repo.listByUploadFileId(workspaceId, uploadFileId);
+
+    for (const record of records) {
+      await this.repo.softDelete(workspaceId, record.id);
+      await this.publishUpserted({ ...record, status: "DELETED" }, "DELETED", cid);
+    }
+
+    this.log.info({ correlationId: cid, workspaceId, uploadFileId, count: records.length }, "Transactions deleted by uploadFileId");
+    return records.length;
   }
 
   async deleteTransaction(
@@ -145,7 +142,7 @@ export class TransactionsService {
     workspaceId: string,
     actorUserId: string,
     correlationId: string,
-    input: { merchant: string; amount: number; currency: string; date: string; category?: string; notes?: string }
+    input: { merchant: string; amount: number; currency: string; date: string; notes?: string }
   ): Promise<TransactionRecord> {
     const cid = getOrCreateCorrelationId(correlationId);
     const now = new Date().toISOString();
@@ -158,7 +155,6 @@ export class TransactionsService {
       amount: input.amount,
       currency: input.currency,
       date: input.date,
-      category: input.category,
       notes: input.notes,
       status: "ACTIVE",
       createdAt: now,
@@ -191,7 +187,6 @@ export class TransactionsService {
         amount: record.amount,
         currency: record.currency,
         date: record.date,
-        category: record.category,
         source: record.source,
         uploadFileId: record.uploadFileId,
         extractedDocumentId: record.extractedDocumentId
@@ -210,34 +205,6 @@ export class TransactionsService {
     });
   }
 
-  private async publishCategoryOverridden(input: {
-    record: TransactionRecord;
-    previousCategory: string | undefined;
-    newCategory: string;
-    overriddenByUserId: string;
-    correlationId: string;
-  }): Promise<void> {
-    const evt: TransactionCategoryOverriddenEvent = {
-      type: "transaction.category.overridden.v1",
-      occurredAt: new Date().toISOString(),
-      correlationId: input.correlationId,
-      workspaceId: input.record.workspaceId,
-      transactionId: input.record.id,
-      previousCategory: input.previousCategory,
-      newCategory: input.newCategory,
-      overriddenByUserId: input.overriddenByUserId
-    };
-
-    await publishEvent(this.sns, {
-      topicArn: this.eventsTopicArn,
-      message: evt,
-      messageAttributes: {
-        eventType: { DataType: "String", StringValue: evt.type },
-        workspaceId: { DataType: "String", StringValue: evt.workspaceId },
-        transactionId: { DataType: "String", StringValue: evt.transactionId }
-      }
-    });
-  }
 }
 
 function mustGetEnv(name: string): string {

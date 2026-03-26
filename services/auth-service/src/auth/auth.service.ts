@@ -35,35 +35,33 @@ export class AuthService {
       passwordHash,
       name,
       workspaceId,
-      role: 'admin',
       createdAt: now,
     });
 
-    return this.createSession({ userId, email, name, workspaceId, role: 'admin' });
+    return this.createSession({ userId, email, name, workspaceId });
   }
 
   async login(email: string, password: string) {
-    let user: any = null;
-  try {
-    user = await this.users.findByEmail(email);
-  } catch (err) {
-    console.error('findByEmail error:', err);
-    throw new UnauthorizedException('Invalid email or password');
+    let user: Awaited<ReturnType<typeof this.users.findByEmail>> = null;
+    try {
+      user = await this.users.findByEmail(email);
+    } catch (err) {
+      console.error('findByEmail error:', err);
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user) throw new UnauthorizedException('Invalid email or password');
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) throw new UnauthorizedException('Invalid email or password');
+
+    return this.createSession({
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      workspaceId: user.workspaceId,
+    });
   }
-  
-  if (!user) throw new UnauthorizedException('Invalid email or password');
-
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new UnauthorizedException('Invalid email or password');
-
-  return this.createSession({
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    workspaceId: user.workspaceId,
-    role: user.role,
-  });
-}
 
   async logout(token: string) {
     await this.sessions.delete(token);
@@ -77,7 +75,6 @@ export class AuthService {
       email: session.email,
       name: session.name,
       workspaceId: session.workspaceId,
-      role: session.role,
     };
   }
 
@@ -86,7 +83,6 @@ export class AuthService {
     email: string;
     name: string;
     workspaceId: string;
-    role: string;
   }) {
     const sessionToken = uuidv4();
     const ttlDays = parseInt(process.env.SESSION_TTL_DAYS ?? '30');
@@ -106,7 +102,6 @@ export class AuthService {
       email: data.email,
       name: data.name,
       workspaceId: data.workspaceId,
-      role: data.role,
       expiresAt,
     };
   }

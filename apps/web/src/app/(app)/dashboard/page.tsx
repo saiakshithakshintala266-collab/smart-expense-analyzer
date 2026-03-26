@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { analyticsApi, transactionsApi, anomalyApi } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { AnalyticsSummary, Transaction, Anomaly } from "@/types";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -20,18 +20,40 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [summaryRes, txRes, anomalyRes, dailyRes] = await Promise.allSettled([
-          analyticsApi.getSummary(),
+        const [txRes, anomalyRes, trendsRes] = await Promise.allSettled([
           transactionsApi.list({ nextPageToken: undefined }),
           anomalyApi.list(),
-          analyticsApi.getDaily(),
+          analyticsApi.getTrends(),
         ]);
-        if (summaryRes.status === "fulfilled") setSummary(summaryRes.value);
+
         if (txRes.status === "fulfilled") setTransactions((txRes.value.items ?? []).slice(0, 5));
         if (anomalyRes.status === "fulfilled") {
           const data = anomalyRes.value;
           setAnomalies(Array.isArray(data) ? data : data.items ?? []);
         }
+
+        const trendData: { yearMonth: string; totalAmount: number; transactionCount: number }[] =
+          trendsRes.status === "fulfilled"
+            ? (Array.isArray(trendsRes.value) ? trendsRes.value : trendsRes.value.items ?? [])
+            : [];
+
+        const allTimeAmount = trendData.reduce((s, t) => s + (t.totalAmount ?? 0), 0);
+        const allTimeCount  = trendData.reduce((s, t) => s + (t.transactionCount ?? 0), 0);
+
+        const mostRecentYm = [...trendData].reverse().find((t) => t.totalAmount > 0)?.yearMonth
+          ?? new Date().toISOString().slice(0, 7);
+
+        const [summaryRes, dailyRes] = await Promise.allSettled([
+          analyticsApi.getSummary({ yearMonth: mostRecentYm }),
+          analyticsApi.getDaily({ yearMonth: mostRecentYm }),
+        ]);
+
+        if (summaryRes.status === "fulfilled") {
+          setSummary({ ...summaryRes.value, totalAmount: allTimeAmount, transactionCount: allTimeCount });
+        } else if (allTimeAmount > 0) {
+          setSummary({ yearMonth: mostRecentYm, totalAmount: allTimeAmount, transactionCount: allTimeCount, currency: "USD", bySource: [], topMerchants: [] });
+        }
+
         if (dailyRes.status === "fulfilled") {
           const data = dailyRes.value;
           setDaily(Array.isArray(data) ? data : data.items ?? []);
@@ -63,15 +85,15 @@ export default function DashboardPage() {
           trend="neutral"
         />
         <StatCard
-          label="Top category"
-          value={summary?.byCategory?.[0]?.category ?? "—"}
-          subtext={summary?.byCategory?.[0] ? formatCurrency(summary.byCategory[0].totalAmount) : undefined}
-          trend="neutral"
-        />
-        <StatCard
           label="Largest expense"
           value={summary?.topMerchants?.[0] ? formatCurrency(summary.topMerchants[0].totalAmount) : "—"}
           subtext={summary?.topMerchants?.[0]?.merchant}
+          trend="neutral"
+        />
+        <StatCard
+          label="Top merchant"
+          value={summary?.topMerchants?.[0]?.merchant ?? "—"}
+          subtext={summary?.topMerchants?.[1]?.merchant}
           trend="neutral"
         />
         <StatCard
@@ -107,11 +129,7 @@ export default function DashboardPage() {
                     fontSize: "12px",
                   }}
                 />
-                <Bar dataKey="totalAmount" radius={[3, 3, 0, 0]}>
-                  {daily.map((_, i) => (
-                    <Cell key={i} fill="hsl(162 73% 37%)" fillOpacity={0.8} />
-                  ))}
-                </Bar>
+                <Bar dataKey="totalAmount" radius={[3, 3, 0, 0]} fill="hsl(162 73% 37%)" fillOpacity={0.8} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -121,17 +139,17 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Spending by category */}
+        {/* Spending by source */}
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-medium text-muted-foreground mb-4">By category</h2>
-          {summary?.byCategory?.length ? (
+          <h2 className="text-sm font-medium text-muted-foreground mb-4">By source</h2>
+          {summary?.bySource?.length ? (
             <div className="flex flex-col gap-2">
-              {summary.byCategory.slice(0, 5).map((cat) => {
-                const max = summary.byCategory[0].totalAmount;
-                const pct = (cat.totalAmount / max) * 100;
+              {summary.bySource.slice(0, 5).map((src) => {
+                const max = summary.bySource[0].totalAmount;
+                const pct = (src.totalAmount / max) * 100;
                 return (
-                  <div key={cat.category} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-24 truncate">{cat.category}</span>
+                  <div key={src.source} className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-24 truncate capitalize">{src.source.replace("_", " ")}</span>
                     <div className="flex-1 h-1.5 rounded-full bg-secondary">
                       <div
                         className="h-1.5 rounded-full bg-primary"
@@ -139,7 +157,7 @@ export default function DashboardPage() {
                       />
                     </div>
                     <span className="text-xs font-medium text-foreground w-16 text-right">
-                      {formatCurrency(cat.totalAmount)}
+                      {formatCurrency(src.totalAmount)}
                     </span>
                   </div>
                 );
@@ -147,7 +165,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
-              No category data yet
+              No source data yet
             </div>
           )}
         </div>
@@ -175,9 +193,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-foreground truncate">{tx.merchant}</p>
                   <p className="text-xs text-muted-foreground">{formatDate(tx.date)}</p>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  {tx.category}
-                </span>
+                <span className="text-xs text-muted-foreground capitalize">{tx.source}</span>
                 <span className="text-sm font-medium text-foreground">
                   {formatCurrency(tx.amount)}
                 </span>

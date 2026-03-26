@@ -12,7 +12,7 @@ import { executeTool } from "../domain/tool.executor";
 
 const log = createLogger({ serviceName: "chat-service" });
 
-const MODEL_ID = "anthropic.claude-haiku-4-5-20251001";
+const MODEL_ID = "anthropic.claude-3-5-haiku-20241022-v1:0";
 const MAX_TOOL_ROUNDS = 5; // prevent infinite loops
 
 const SYSTEM_PROMPT = `You are a helpful financial assistant for the Smart Expense Analyzer. 

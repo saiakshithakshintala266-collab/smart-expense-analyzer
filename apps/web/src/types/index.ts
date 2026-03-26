@@ -1,5 +1,3 @@
-export type Role = "admin" | "member" | "viewer";
-
 export interface UploadFile {
   id: string;
   workspaceId: string;
@@ -21,7 +19,6 @@ export interface Transaction {
   amount: number;
   currency: string;
   date: string;
-  category: string;
   source: string;
   notes?: string;
   createdAt: string;
@@ -32,7 +29,6 @@ export interface AnalyticsSummary {
   totalAmount: number;
   transactionCount: number;
   currency: string;
-  byCategory: { category: string; totalAmount: number; transactionCount: number; currency: string }[];
   bySource: { source: string; totalAmount: number; transactionCount: number; currency: string }[];
   topMerchants: { merchant: string; totalAmount: number; transactionCount: number; currency: string }[];
 }
@@ -84,6 +80,5 @@ export interface SessionData {
   email: string;
   name: string;
   workspaceId: string;
-  role: string;
   expiresAt: string;
 }

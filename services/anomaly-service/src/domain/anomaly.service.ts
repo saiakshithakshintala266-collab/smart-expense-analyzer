@@ -20,7 +20,6 @@ import {
   detectRapidRepeat,
   detectLargeRoundNumber,
   detectFirstTimeMerchant,
-  detectCategorySpendSpike,
   DetectionResult
 } from "./detectors";
 
@@ -39,7 +38,14 @@ export class AnomalyService {
   async handleTransactionUpserted(event: TransactionUpsertedEvent): Promise<void> {
     const correlationId = getOrCreateCorrelationId(event.correlationId);
 
-    // Only process CREATED transactions
+    // On DELETED: dismiss any open anomalies linked to this transaction
+    if (event.operation === "DELETED") {
+      await this.repo.dismissAnomaliesByTransactionId(event.workspaceId, event.transactionId);
+      this.log.info({ correlationId, transactionId: event.transactionId }, "Anomalies dismissed for deleted transaction");
+      return;
+    }
+
+    // Only process CREATED transactions for detection
     if (event.operation !== "CREATED") {
       this.log.info(
         { correlationId, transactionId: event.transactionId, operation: event.operation },
@@ -58,7 +64,6 @@ export class AnomalyService {
       amount: snapshot.amount,
       currency: snapshot.currency,
       date: snapshot.date,
-      category: snapshot.category,
       occurredAt: now
     };
 
@@ -68,18 +73,17 @@ export class AnomalyService {
     );
 
     // Run all detectors in parallel
-    const [duplicate, largeAmount, rapidRepeat, firstTime, categorySpike] = await Promise.all([
+    const [duplicate, largeAmount, rapidRepeat, firstTime] = await Promise.all([
       detectDuplicate(this.repo, tx),
       detectUnusuallyLargeAmount(this.repo, tx),
       detectRapidRepeat(this.repo, tx),
       detectFirstTimeMerchant(this.repo, tx),
-      detectCategorySpendSpike(this.repo, tx)
     ]);
 
     // Sync detector (no async needed)
     const roundNumber = detectLargeRoundNumber(tx);
 
-    const detections = [duplicate, largeAmount, rapidRepeat, roundNumber, firstTime, categorySpike]
+    const detections = [duplicate, largeAmount, rapidRepeat, roundNumber, firstTime]
       .filter((d): d is DetectionResult & NonNullable<DetectionResult> => d !== null);
 
     this.log.info(
@@ -96,12 +100,6 @@ export class AnomalyService {
       date: tx.date,
       occurredAt: now
     });
-
-    // Update category spend index
-    if (snapshot.category) {
-      const yearMonth = tx.date.slice(0, 7);
-      await this.repo.incrementCategorySpend(workspaceId, yearMonth, snapshot.category, tx.amount);
-    }
 
     // Save and publish each anomaly
     for (const detection of detections) {
