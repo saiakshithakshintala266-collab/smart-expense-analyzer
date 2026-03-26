@@ -79,7 +79,7 @@ export default function ChatPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Ask me anything about your finances</p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Try: "What did I spend the most on?" or "Show me my top merchants"
+                Try: &ldquo;What did I spend the most on?&rdquo; or &ldquo;Show me my top merchants&rdquo;
               </p>
             </div>
           </div>
