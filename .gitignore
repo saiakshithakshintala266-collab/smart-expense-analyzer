@@ -11,6 +11,7 @@ apps/web/.next/**
 
 # local env files
 **/.env.local
+.env.prod
 
 # local docker scratch folders (if accidentally created)
 /docker/

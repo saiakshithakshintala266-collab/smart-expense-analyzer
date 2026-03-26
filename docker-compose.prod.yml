@@ -1,0 +1,130 @@
+services:
+
+  # ── Reverse proxy (auto HTTPS via Let's Encrypt) ──────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: sea-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - sea-net
+    depends_on:
+      - auth-service
+      - upload-service
+      - extraction-service
+      - transactions-service
+      - analytics-service
+      - anomaly-service
+      - notification-service
+      - chat-service
+
+  # ── Backend services ───────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: sea-auth
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3009
+    networks:
+      - sea-net
+
+  upload-service:
+    build:
+      context: .
+      dockerfile: services/upload-service/Dockerfile
+    container_name: sea-upload
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3001
+    networks:
+      - sea-net
+
+  extraction-service:
+    build:
+      context: .
+      dockerfile: services/extraction-service/Dockerfile
+    container_name: sea-extraction
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3002
+    networks:
+      - sea-net
+
+  transactions-service:
+    build:
+      context: .
+      dockerfile: services/transactions-service/Dockerfile
+    container_name: sea-transactions
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3003
+    networks:
+      - sea-net
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: services/analytics-service/Dockerfile
+    container_name: sea-analytics
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3005
+    networks:
+      - sea-net
+
+  anomaly-service:
+    build:
+      context: .
+      dockerfile: services/anomaly-service/Dockerfile
+    container_name: sea-anomaly
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3006
+    networks:
+      - sea-net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: sea-notification
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3007
+    networks:
+      - sea-net
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat-service/Dockerfile
+    container_name: sea-chat
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      PORT: 3008
+    networks:
+      - sea-net
+
+networks:
+  sea-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
