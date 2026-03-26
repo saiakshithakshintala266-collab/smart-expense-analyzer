@@ -21,3 +21,4 @@ tools/docker/localstack-data/
 # Compiled shared lib artifacts
 shared/libs/**/src/*.js
 shared/libs/**/src/*.js.map
+apps/web/tsconfig.tsbuildinfo
