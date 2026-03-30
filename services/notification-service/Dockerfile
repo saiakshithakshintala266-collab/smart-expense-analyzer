@@ -15,4 +15,4 @@ RUN pnpm --filter @services/notification-service build
 
 EXPOSE 3007
 
-CMD ["node", "services/notification-service/dist/main.js"]
+CMD ["node", "services/notification-service/dist/services/notification-service/src/main.js"]

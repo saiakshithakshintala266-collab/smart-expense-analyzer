@@ -15,4 +15,4 @@ RUN pnpm --filter @services/chat-service build
 
 EXPOSE 3008
 
-CMD ["node", "services/chat-service/dist/main.js"]
+CMD ["node", "services/chat-service/dist/services/chat-service/src/main.js"]
